@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PDF テキスト＆画像追加ツール｜無料ブラウザツール</title>
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -14,25 +15,23 @@
     min-height: 100vh;
   }
 
-  .container { max-width: 920px; margin: 0 auto; padding: 28px 16px 60px; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 28px 16px 60px; }
 
-  /* Header */
-  .header { text-align: center; margin-bottom: 32px; }
+  .header { text-align: center; margin-bottom: 28px; }
   .badge {
     display: inline-flex; align-items: center; gap: 6px;
     background: #dbeafe; color: #1d4ed8;
     font-size: 12px; font-weight: 600;
     padding: 4px 12px; border-radius: 20px; margin-bottom: 14px;
   }
-  .header h1 { font-size: 26px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; }
-  .header p { color: #64748b; font-size: 14px; line-height: 1.6; }
+  .header h1 { font-size: 24px; font-weight: 800; margin-bottom: 6px; }
+  .header p { color: #64748b; font-size: 13px; }
 
   /* Drop zone */
   .drop-zone {
     border: 2px dashed #94a3b8; border-radius: 20px;
-    padding: 56px 24px; text-align: center; cursor: pointer;
-    transition: all 0.2s; background: white;
-    margin-bottom: 20px;
+    padding: 60px 24px; text-align: center; cursor: pointer;
+    transition: all 0.2s; background: white; max-width: 560px; margin: 0 auto;
   }
   .drop-zone:hover, .drop-zone.drag-over { border-color: #2563eb; background: #eff6ff; }
   .drop-zone .dz-icon { font-size: 52px; margin-bottom: 16px; }
@@ -40,139 +39,170 @@
   .drop-zone p { color: #64748b; font-size: 14px; }
   .drop-zone input { display: none; }
 
-  /* File info bar */
-  .file-info {
-    background: #f0fdf4; border: 1px solid #86efac; border-radius: 14px;
-    padding: 14px 18px; display: flex; align-items: center; gap: 12px; margin-bottom: 24px;
+  /* Main layout */
+  .main-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 18px;
+    align-items: start;
   }
-  .file-info .fi-icon { font-size: 22px; }
-  .file-info .fi-details { flex: 1; min-width: 0; }
-  .file-info .fi-name { font-weight: 700; color: #166534; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .file-info .fi-meta { font-size: 12px; color: #15803d; margin-top: 2px; }
-  .file-info .fi-change {
-    background: none; border: 1px solid #86efac; color: #166534;
-    padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 13px;
-    white-space: nowrap; flex-shrink: 0;
-  }
-  .file-info .fi-change:hover { background: #dcfce7; }
+  @media (max-width: 720px) { .main-layout { grid-template-columns: 1fr; } }
 
-  /* Editor layout */
-  .editor { display: grid; grid-template-columns: 1fr 300px; gap: 18px; margin-bottom: 20px; }
-  @media (max-width: 680px) { .editor { grid-template-columns: 1fr; } }
+  /* Left panel */
+  .card { background: white; border-radius: 18px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
 
-  /* Card */
-  .card { background: white; border-radius: 18px; padding: 22px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
-
-  /* Tabs */
-  .tabs { display: flex; gap: 4px; background: #f1f5f9; border-radius: 12px; padding: 4px; margin-bottom: 22px; }
+  .tabs { display: flex; gap: 4px; background: #f1f5f9; border-radius: 10px; padding: 4px; margin-bottom: 18px; }
   .tab {
-    flex: 1; padding: 9px 8px; border: none; background: none; border-radius: 9px;
-    cursor: pointer; font-size: 13px; font-weight: 600; color: #64748b;
+    flex: 1; padding: 8px 6px; border: none; background: none; border-radius: 7px;
+    cursor: pointer; font-size: 12px; font-weight: 600; color: #64748b;
     transition: all 0.15s; font-family: inherit;
   }
   .tab.active { background: white; color: #2563eb; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
 
-  /* Form elements */
-  .form-group { margin-bottom: 16px; }
-  label { display: block; font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .form-group { margin-bottom: 14px; }
+  label { display: block; font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.04em; }
   input[type="text"], textarea, select, input[type="number"] {
-    width: 100%; padding: 10px 12px; border: 1.5px solid #e2e8f0; border-radius: 10px;
-    font-size: 14px; color: #1e293b; background: #f8fafc;
-    font-family: inherit; transition: border-color 0.15s, background 0.15s; line-height: 1.5;
+    width: 100%; padding: 9px 11px; border: 1.5px solid #e2e8f0; border-radius: 9px;
+    font-size: 13px; color: #1e293b; background: #f8fafc;
+    font-family: inherit; transition: border-color 0.15s; line-height: 1.5;
   }
   input:focus, textarea:focus, select:focus {
     outline: none; border-color: #2563eb; background: white; box-shadow: 0 0 0 3px #dbeafe;
   }
-  textarea { resize: vertical; min-height: 80px; }
-  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  textarea { resize: vertical; min-height: 72px; }
 
-  /* Color row */
   .color-row { display: flex; gap: 8px; align-items: center; }
   .color-row input[type="color"] {
-    width: 42px; height: 40px; padding: 2px 3px;
+    width: 40px; height: 38px; padding: 2px 3px;
     border: 1.5px solid #e2e8f0; border-radius: 8px; cursor: pointer; flex-shrink: 0;
   }
   .color-row input[type="text"] { flex: 1; }
 
-  /* Position grid */
-  .pos-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
-  .pos-cell {
-    aspect-ratio: 1; border: 1.5px solid #e2e8f0; border-radius: 9px;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; font-size: 16px; transition: all 0.15s;
-    background: #f8fafc; color: #94a3b8; user-select: none;
-  }
-  .pos-cell:hover { border-color: #93c5fd; background: #eff6ff; color: #3b82f6; }
-  .pos-cell.active { border-color: #2563eb; background: #dbeafe; color: #2563eb; font-weight: 700; }
-
-  /* Add button */
-  .btn-add {
-    width: 100%; padding: 12px; background: #2563eb; color: white;
-    border: none; border-radius: 12px; font-size: 14px; font-weight: 700;
-    cursor: pointer; transition: background 0.15s; font-family: inherit;
-    display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 4px;
-  }
-  .btn-add:hover { background: #1d4ed8; }
-
-  /* Image upload */
   .img-upload {
-    border: 2px dashed #e2e8f0; border-radius: 12px; padding: 24px;
+    border: 2px dashed #e2e8f0; border-radius: 10px; padding: 20px;
     text-align: center; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;
   }
   .img-upload:hover { border-color: #93c5fd; background: #f0f9ff; }
   .img-upload input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-  .img-upload .iu-icon { font-size: 30px; margin-bottom: 8px; }
-  .img-upload p { font-size: 13px; color: #64748b; }
-  #imgPreview { width: 100%; max-height: 120px; object-fit: contain; border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 4px; }
+  .img-upload .iu-icon { font-size: 26px; margin-bottom: 6px; }
+  .img-upload p { font-size: 12px; color: #64748b; }
+  #imgPreview { width: 100%; max-height: 100px; object-fit: contain; border-radius: 7px; border: 1px solid #e2e8f0; margin-top: 4px; }
+
+  .btn-add {
+    width: 100%; padding: 11px; background: #2563eb; color: white;
+    border: none; border-radius: 11px; font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: background 0.15s; font-family: inherit;
+    display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 2px;
+  }
+  .btn-add:hover { background: #1d4ed8; }
 
   /* Element list */
-  .list-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-  .list-title { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
+  .list-header { display: flex; align-items: center; justify-content: space-between; margin: 18px 0 10px; }
+  .list-title { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
   .list-count {
     background: #2563eb; color: white; font-size: 11px; font-weight: 700;
     padding: 2px 8px; border-radius: 20px; min-width: 22px; text-align: center;
   }
   .list-count.zero { background: #e2e8f0; color: #94a3b8; }
-
-  .element-list { display: flex; flex-direction: column; gap: 8px; }
+  .element-list { display: flex; flex-direction: column; gap: 7px; }
   .el-item {
-    background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px;
-    padding: 10px 12px; display: flex; align-items: flex-start; gap: 8px;
+    background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 9px;
+    padding: 9px 11px; display: flex; align-items: center; gap: 8px;
   }
-  .el-item .el-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .el-item .el-icon { font-size: 15px; flex-shrink: 0; }
   .el-item .el-info { flex: 1; min-width: 0; }
-  .el-item .el-title { font-size: 13px; font-weight: 600; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .el-item .el-meta { font-size: 11px; color: #94a3b8; margin-top: 2px; }
-  .el-item .el-del { background: none; border: none; color: #fca5a5; cursor: pointer; font-size: 17px; flex-shrink: 0; padding: 0 2px; line-height: 1; }
+  .el-item .el-title { font-size: 12px; font-weight: 600; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .el-item .el-meta { font-size: 10px; color: #94a3b8; margin-top: 1px; }
+  .el-item .el-del { background: none; border: none; color: #fca5a5; cursor: pointer; font-size: 16px; flex-shrink: 0; padding: 0; line-height: 1; }
   .el-item .el-del:hover { color: #ef4444; }
+  .empty-list { text-align: center; padding: 24px 12px; color: #94a3b8; font-size: 12px; line-height: 1.7; }
 
-  .empty-list { text-align: center; padding: 36px 16px; color: #94a3b8; }
-  .empty-list .el-icon { font-size: 28px; margin-bottom: 8px; }
-  .empty-list p { font-size: 12px; line-height: 1.7; }
+  /* Preview area */
+  .preview-wrap { background: white; border-radius: 18px; padding: 18px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
 
-  /* Save button */
+  .preview-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px; gap: 10px; flex-wrap: wrap;
+  }
+  .page-nav { display: flex; align-items: center; gap: 10px; }
+  .page-nav button {
+    background: #f1f5f9; border: none; border-radius: 8px; padding: 6px 12px;
+    cursor: pointer; font-size: 14px; font-weight: 600; color: #475569; transition: background 0.15s;
+  }
+  .page-nav button:hover:not(:disabled) { background: #dbeafe; color: #2563eb; }
+  .page-nav button:disabled { opacity: 0.35; cursor: not-allowed; }
+  .page-nav span { font-size: 13px; font-weight: 600; color: #475569; white-space: nowrap; }
+
+  .hint-bar {
+    background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px;
+    padding: 8px 14px; font-size: 12px; color: #1d4ed8;
+  }
+
+  .canvas-container {
+    position: relative; display: inline-block;
+    width: 100%; overflow: auto;
+    border: 1px solid #e2e8f0; border-radius: 10px;
+    background: #f8fafc;
+  }
+  #pdfCanvas { display: block; max-width: 100%; height: auto; }
+
+  /* Overlay container */
+  #overlay {
+    position: absolute; inset: 0; pointer-events: none;
+  }
+
+  /* Draggable items on canvas */
+  .drag-item {
+    position: absolute;
+    pointer-events: all;
+    cursor: grab;
+    user-select: none;
+    background: rgba(37, 99, 235, 0.15);
+    border: 2px solid #2563eb;
+    border-radius: 6px;
+    padding: 3px 7px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #1e3a8a;
+    white-space: nowrap;
+    max-width: 240px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 2px 8px rgba(37,99,235,0.25);
+    transition: box-shadow 0.1s;
+  }
+  .drag-item:active { cursor: grabbing; box-shadow: 0 4px 14px rgba(37,99,235,0.4); }
+  .drag-item.img-item { background: rgba(5,150,105,0.12); border-color: #059669; color: #064e3b; }
+  .drag-item .del-btn {
+    display: inline-block; margin-left: 6px; cursor: pointer;
+    color: #ef4444; font-weight: 700; font-size: 13px;
+    vertical-align: middle; line-height: 1;
+  }
+  .drag-item .del-btn:hover { color: #b91c1c; }
+
+  /* Save */
+  .save-row { margin-top: 16px; }
   .btn-save {
-    width: 100%; padding: 16px; background: #059669; color: white;
-    border: none; border-radius: 16px; font-size: 16px; font-weight: 800;
+    width: 100%; padding: 15px; background: #059669; color: white;
+    border: none; border-radius: 14px; font-size: 15px; font-weight: 800;
     cursor: pointer; transition: background 0.15s; font-family: inherit;
     display: flex; align-items: center; justify-content: center; gap: 10px;
   }
   .btn-save:hover { background: #047857; }
   .btn-save:disabled { background: #94a3b8; cursor: not-allowed; }
-
-  /* Privacy footer */
-  .privacy { text-align: center; margin-top: 12px; font-size: 12px; color: #94a3b8; display: flex; align-items: center; justify-content: center; gap: 5px; }
+  .privacy { text-align: center; margin-top: 10px; font-size: 11px; color: #94a3b8; }
 
   /* Toast */
   .toast {
     position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
-    background: #1e293b; color: white; padding: 12px 22px;
-    border-radius: 14px; font-size: 14px; font-weight: 600;
+    background: #1e293b; color: white; padding: 11px 22px;
+    border-radius: 12px; font-size: 13px; font-weight: 600;
     z-index: 9999; pointer-events: none; white-space: nowrap;
-    animation: fadeUp 0.25s ease forwards;
+    animation: fadeUp 0.2s ease forwards;
   }
   @keyframes fadeUp {
-    from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+    from { opacity: 0; transform: translateX(-50%) translateY(10px); }
     to   { opacity: 1; transform: translateX(-50%) translateY(0); }
   }
 
@@ -182,11 +212,10 @@
 <body>
 <div class="container">
 
-  <!-- Header -->
   <div class="header">
     <div class="badge">🔒 ブラウザ内処理・完全無料・サーバー送信なし</div>
     <h1>PDF テキスト＆画像追加ツール</h1>
-    <p>PDFに文字や画像を追加してそのまま保存できます。<br>ファイルはサーバーに送られません。すべてブラウザ内で処理します。</p>
+    <p>PDFを開いて、テキストや画像をドラッグで好きな場所に置いて保存できます</p>
   </div>
 
   <!-- Drop zone -->
@@ -197,33 +226,23 @@
     <input type="file" id="fileInput" accept=".pdf">
   </div>
 
-  <!-- File info -->
-  <div id="fileInfo" class="file-info hidden">
-    <div class="fi-icon">📋</div>
-    <div class="fi-details">
-      <div class="fi-name" id="fileName">—</div>
-      <div class="fi-meta" id="fileMeta">—</div>
-    </div>
-    <button class="fi-change" onclick="resetFile()">別のPDFを開く</button>
-  </div>
+  <!-- Main: left panel + preview -->
+  <div id="mainLayout" class="main-layout hidden">
 
-  <!-- Editor -->
-  <div id="editor" class="editor hidden">
-
-    <!-- Left: add panel -->
-    <div class="card">
-      <div class="tabs">
-        <button class="tab active" id="tabText" onclick="switchTab('text')">📝 テキストを追加</button>
-        <button class="tab" id="tabImage" onclick="switchTab('image')">🖼 画像を追加</button>
-      </div>
-
-      <!-- Text form -->
-      <div id="textForm">
-        <div class="form-group">
-          <label>テキスト内容</label>
-          <textarea id="textContent" placeholder="追加したいテキストを入力&#10;（日本語OK・複数行OK）"></textarea>
+    <!-- Left panel -->
+    <div>
+      <div class="card">
+        <div class="tabs">
+          <button class="tab active" id="tabText" onclick="switchTab('text')">📝 テキスト</button>
+          <button class="tab" id="tabImage" onclick="switchTab('image')">🖼 画像</button>
         </div>
-        <div class="row2">
+
+        <!-- Text form -->
+        <div id="textForm">
+          <div class="form-group">
+            <label>テキスト内容</label>
+            <textarea id="textContent" placeholder="追加したいテキスト&#10;（日本語・複数行OK）"></textarea>
+          </div>
           <div class="form-group">
             <label>フォントサイズ</label>
             <select id="fontSize">
@@ -237,109 +256,86 @@
             </select>
           </div>
           <div class="form-group">
-            <label>対象ページ</label>
-            <input type="number" id="textPage" value="1" min="1">
-          </div>
-        </div>
-        <div class="form-group">
-          <label>文字色</label>
-          <div class="color-row">
-            <input type="color" id="textColorPicker" value="#000000"
-              oninput="document.getElementById('textColorHex').value=this.value">
-            <input type="text" id="textColorHex" value="#000000" placeholder="#000000"
-              oninput="if(/^#[0-9a-fA-F]{6}$/.test(this.value))document.getElementById('textColorPicker').value=this.value">
-          </div>
-        </div>
-        <div class="form-group">
-          <label>配置位置</label>
-          <div class="pos-grid" id="textPosGrid">
-            <div class="pos-cell" data-pos="tl" onclick="selPos(this,'textPosGrid')">↖</div>
-            <div class="pos-cell" data-pos="tc" onclick="selPos(this,'textPosGrid')">↑</div>
-            <div class="pos-cell" data-pos="tr" onclick="selPos(this,'textPosGrid')">↗</div>
-            <div class="pos-cell" data-pos="ml" onclick="selPos(this,'textPosGrid')">←</div>
-            <div class="pos-cell active" data-pos="mc" onclick="selPos(this,'textPosGrid')">中央</div>
-            <div class="pos-cell" data-pos="mr" onclick="selPos(this,'textPosGrid')">→</div>
-            <div class="pos-cell" data-pos="bl" onclick="selPos(this,'textPosGrid')">↙</div>
-            <div class="pos-cell" data-pos="bc" onclick="selPos(this,'textPosGrid')">↓</div>
-            <div class="pos-cell" data-pos="br" onclick="selPos(this,'textPosGrid')">↘</div>
-          </div>
-        </div>
-        <button class="btn-add" onclick="addText()">＋ リストに追加</button>
-      </div>
-
-      <!-- Image form -->
-      <div id="imageForm" class="hidden">
-        <div class="form-group">
-          <label>画像ファイル（JPG / PNG）</label>
-          <div class="img-upload">
-            <input type="file" id="imgFileInput" accept="image/jpeg,image/png" onchange="onImgSelect(this)">
-            <div id="imgPlaceholder">
-              <div class="iu-icon">🖼</div>
-              <p>クリックして画像を選択</p>
+            <label>文字色</label>
+            <div class="color-row">
+              <input type="color" id="textColorPicker" value="#000000"
+                oninput="document.getElementById('textColorHex').value=this.value">
+              <input type="text" id="textColorHex" value="#000000" placeholder="#000000"
+                oninput="if(/^#[0-9a-fA-F]{6}$/.test(this.value))document.getElementById('textColorPicker').value=this.value">
             </div>
-            <img id="imgPreview" class="hidden" alt="プレビュー">
           </div>
+          <button class="btn-add" onclick="addText()">＋ プレビューに追加して位置を決める</button>
         </div>
-        <div class="row2">
+
+        <!-- Image form -->
+        <div id="imageForm" class="hidden">
+          <div class="form-group">
+            <label>画像ファイル（JPG / PNG）</label>
+            <div class="img-upload">
+              <input type="file" id="imgFileInput" accept="image/jpeg,image/png" onchange="onImgSelect(this)">
+              <div id="imgPlaceholder">
+                <div class="iu-icon">🖼</div>
+                <p>クリックして画像を選択</p>
+              </div>
+              <img id="imgPreview" class="hidden" alt="プレビュー">
+            </div>
+          </div>
           <div class="form-group">
             <label>表示幅（pt）</label>
-            <input type="number" id="imgWidth" value="200" min="10" max="1000" placeholder="200">
+            <input type="number" id="imgWidth" value="200" min="10" max="1000">
           </div>
-          <div class="form-group">
-            <label>対象ページ</label>
-            <input type="number" id="imgPage" value="1" min="1">
-          </div>
+          <button class="btn-add" onclick="addImage()">＋ プレビューに追加して位置を決める</button>
         </div>
-        <div class="form-group">
-          <label>配置位置</label>
-          <div class="pos-grid" id="imgPosGrid">
-            <div class="pos-cell" data-pos="tl" onclick="selPos(this,'imgPosGrid')">↖</div>
-            <div class="pos-cell" data-pos="tc" onclick="selPos(this,'imgPosGrid')">↑</div>
-            <div class="pos-cell" data-pos="tr" onclick="selPos(this,'imgPosGrid')">↗</div>
-            <div class="pos-cell" data-pos="ml" onclick="selPos(this,'imgPosGrid')">←</div>
-            <div class="pos-cell active" data-pos="mc" onclick="selPos(this,'imgPosGrid')">中央</div>
-            <div class="pos-cell" data-pos="mr" onclick="selPos(this,'imgPosGrid')">→</div>
-            <div class="pos-cell" data-pos="bl" onclick="selPos(this,'imgPosGrid')">↙</div>
-            <div class="pos-cell" data-pos="bc" onclick="selPos(this,'imgPosGrid')">↓</div>
-            <div class="pos-cell" data-pos="br" onclick="selPos(this,'imgPosGrid')">↘</div>
-          </div>
+
+        <!-- Element list -->
+        <div class="list-header">
+          <span class="list-title">追加した要素</span>
+          <span class="list-count zero" id="listCount">0</span>
         </div>
-        <button class="btn-add" onclick="addImage()">＋ リストに追加</button>
+        <div class="element-list" id="elementList">
+          <div class="empty-list">テキストや画像を追加すると<br>ここに一覧が表示されます</div>
+        </div>
       </div>
     </div>
 
-    <!-- Right: element list -->
-    <div class="card">
-      <div class="list-header">
-        <span class="list-title">追加する要素</span>
-        <span class="list-count zero" id="listCount">0</span>
-      </div>
-      <div id="elementList">
-        <div class="empty-list">
-          <div class="el-icon">📋</div>
-          <p>テキストや画像を<br>左のフォームから追加して<br>ください</p>
+    <!-- Preview + Save -->
+    <div class="preview-wrap">
+      <div class="preview-toolbar">
+        <div class="page-nav">
+          <button id="btnPrev" onclick="changePage(-1)" disabled>◀</button>
+          <span id="pageLabel">1 / 1</span>
+          <button id="btnNext" onclick="changePage(1)" disabled>▶</button>
+          <button onclick="resetFile()" style="margin-left:8px; font-size:12px;">別のPDFを開く</button>
         </div>
+        <div class="hint-bar">💡 追加した要素をドラッグして位置を調整できます</div>
+      </div>
+
+      <div class="canvas-container" id="canvasContainer">
+        <canvas id="pdfCanvas"></canvas>
+        <div id="overlay"></div>
+      </div>
+
+      <div class="save-row">
+        <button id="saveBtn" class="btn-save" onclick="savePDF()">
+          📥 このまま PDF を保存する
+        </button>
+        <div class="privacy">🔒 ファイルはどこにも送信されません。すべてブラウザ内で処理します</div>
       </div>
     </div>
+
   </div>
-
-  <!-- Save area -->
-  <div id="saveArea" class="hidden">
-    <button id="saveBtn" class="btn-save" onclick="savePDF()">
-      📥 PDFを保存する
-    </button>
-    <div class="privacy">
-      🔒 すべての処理はブラウザ内で完結。ファイルはどこにも送信されません
-    </div>
-  </div>
-
-</div><!-- /container -->
+</div>
 
 <script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
 const { PDFDocument } = PDFLib;
 
 let pdfBytes = null;
+let pdfJsDoc = null;
 let pageCount = 0;
+let currentPage = 1;
+let canvasScale = 1;
 let elements = [];
 let imgData = null;
 let imgType = null;
@@ -363,28 +359,152 @@ fileInput.addEventListener('change', e => { if (e.target.files[0]) loadPDF(e.tar
 async function loadPDF(file) {
   try {
     pdfBytes = await file.arrayBuffer();
-    const doc = await PDFDocument.load(pdfBytes);
-    pageCount = doc.getPageCount();
-    document.getElementById('fileName').textContent = file.name;
-    document.getElementById('fileMeta').textContent = `${pageCount}ページ  /  ${(file.size / 1024).toFixed(1)} KB`;
-    document.getElementById('textPage').max = pageCount;
-    document.getElementById('imgPage').max = pageCount;
-    show('fileInfo'); show('editor'); show('saveArea');
+    const copy = pdfBytes.slice(0);
+    pdfJsDoc = await pdfjsLib.getDocument({ data: copy }).promise;
+    pageCount = pdfJsDoc.numPages;
+    currentPage = 1;
     document.getElementById('dropZone').classList.add('hidden');
+    document.getElementById('mainLayout').classList.remove('hidden');
+    await renderPage(currentPage);
+    updatePageNav();
   } catch(e) {
-    toast('PDFの読み込みに失敗しました（保護付きPDFは非対応です）');
+    toast('PDFの読み込みに失敗しました（パスワード付きPDFは非対応です）');
   }
 }
 
 function resetFile() {
-  pdfBytes = null; pageCount = 0; elements = []; imgData = null;
+  pdfBytes = null; pdfJsDoc = null; pageCount = 0; currentPage = 1;
+  elements = []; imgData = null;
   fileInput.value = '';
-  hide('fileInfo'); hide('editor'); hide('saveArea');
+  document.getElementById('overlay').innerHTML = '';
   document.getElementById('dropZone').classList.remove('hidden');
+  document.getElementById('mainLayout').classList.add('hidden');
   document.getElementById('imgFileInput').value = '';
   document.getElementById('imgPreview').classList.add('hidden');
   document.getElementById('imgPlaceholder').classList.remove('hidden');
   renderList();
+}
+
+/* ─── PDF.js page rendering ─── */
+async function renderPage(pageNum) {
+  const page = await pdfJsDoc.getPage(pageNum);
+  const container = document.getElementById('canvasContainer');
+  const containerWidth = container.clientWidth || 700;
+  const unscaled = page.getViewport({ scale: 1 });
+  canvasScale = (containerWidth - 2) / unscaled.width;
+  const vp = page.getViewport({ scale: canvasScale });
+  const canvas = document.getElementById('pdfCanvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = vp.width;
+  canvas.height = vp.height;
+  await page.render({ canvasContext: ctx, viewport: vp }).promise;
+
+  // Overlay matches canvas size
+  const overlay = document.getElementById('overlay');
+  overlay.style.width = canvas.width + 'px';
+  overlay.style.height = canvas.height + 'px';
+  renderOverlay();
+}
+
+function updatePageNav() {
+  document.getElementById('pageLabel').textContent = `${currentPage} / ${pageCount}`;
+  document.getElementById('btnPrev').disabled = currentPage <= 1;
+  document.getElementById('btnNext').disabled = currentPage >= pageCount;
+}
+
+async function changePage(delta) {
+  const next = currentPage + delta;
+  if (next < 1 || next > pageCount) return;
+  currentPage = next;
+  await renderPage(currentPage);
+  updatePageNav();
+}
+
+/* ─── Overlay: render draggable items for currentPage ─── */
+function renderOverlay() {
+  const overlay = document.getElementById('overlay');
+  overlay.innerHTML = '';
+  const canvas = document.getElementById('pdfCanvas');
+
+  elements.filter(el => el.page === currentPage).forEach(el => {
+    const div = document.createElement('div');
+    div.className = 'drag-item' + (el.type === 'image' ? ' img-item' : '');
+    div.style.left = (el.xRatio * canvas.width) + 'px';
+    div.style.top = (el.yRatio * canvas.height) + 'px';
+
+    const label = el.type === 'text'
+      ? el.text.replace(/\n/g, ' ').slice(0, 30) + (el.text.length > 30 ? '…' : '')
+      : '🖼 画像';
+    div.innerHTML = label + `<span class="del-btn" data-id="${el.id}" title="削除">✕</span>`;
+
+    makeDraggable(div, el);
+
+    div.querySelector('.del-btn').addEventListener('click', e => {
+      e.stopPropagation();
+      removeEl(el.id);
+    });
+
+    overlay.appendChild(div);
+  });
+}
+
+function makeDraggable(div, el) {
+  let startX, startY, startLeft, startTop;
+  const canvas = document.getElementById('pdfCanvas');
+
+  div.addEventListener('mousedown', e => {
+    if (e.target.classList.contains('del-btn')) return;
+    e.preventDefault();
+    startX = e.clientX;
+    startY = e.clientY;
+    startLeft = parseFloat(div.style.left);
+    startTop  = parseFloat(div.style.top);
+
+    const onMove = e => {
+      const nx = startLeft + (e.clientX - startX);
+      const ny = startTop  + (e.clientY - startY);
+      const clamped_x = Math.max(0, Math.min(canvas.width,  nx));
+      const clamped_y = Math.max(0, Math.min(canvas.height, ny));
+      div.style.left = clamped_x + 'px';
+      div.style.top  = clamped_y + 'px';
+      el.xRatio = clamped_x / canvas.width;
+      el.yRatio = clamped_y / canvas.height;
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+
+  // Touch support
+  div.addEventListener('touchstart', e => {
+    if (e.target.classList.contains('del-btn')) return;
+    e.preventDefault();
+    const t = e.touches[0];
+    startX = t.clientX; startY = t.clientY;
+    startLeft = parseFloat(div.style.left);
+    startTop  = parseFloat(div.style.top);
+
+    const onMove = e => {
+      const t = e.touches[0];
+      const nx = startLeft + (t.clientX - startX);
+      const ny = startTop  + (t.clientY - startY);
+      const cx = Math.max(0, Math.min(canvas.width,  nx));
+      const cy = Math.max(0, Math.min(canvas.height, ny));
+      div.style.left = cx + 'px';
+      div.style.top  = cy + 'px';
+      el.xRatio = cx / canvas.width;
+      el.yRatio = cy / canvas.height;
+    };
+    const onEnd = () => {
+      div.removeEventListener('touchmove', onMove);
+      div.removeEventListener('touchend', onEnd);
+    };
+    div.addEventListener('touchmove', onMove, { passive: false });
+    div.addEventListener('touchend', onEnd);
+  }, { passive: false });
 }
 
 /* ─── Tab switching ─── */
@@ -395,48 +515,23 @@ function switchTab(t) {
   document.getElementById('imageForm').classList.toggle('hidden', t !== 'image');
 }
 
-/* ─── Position grid ─── */
-function selPos(cell, gridId) {
-  document.querySelectorAll(`#${gridId} .pos-cell`).forEach(c => c.classList.remove('active'));
-  cell.classList.add('active');
-}
-function getPos(gridId) {
-  const a = document.querySelector(`#${gridId} .pos-cell.active`);
-  return a ? a.dataset.pos : 'mc';
-}
-
-/* ─── Text to PNG via canvas (Japanese support) ─── */
-function renderTextToPng(text, fontSize, color) {
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  const fontStr = `${fontSize}px -apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif`;
-  ctx.font = fontStr;
-  const lines = text.split('\n');
-  const lh = fontSize * 1.55;
-  const maxW = Math.max(...lines.map(l => ctx.measureText(l).width));
-  canvas.width  = Math.ceil(maxW) + 24;
-  canvas.height = Math.ceil(lines.length * lh) + 16;
-  ctx.font = fontStr;
-  ctx.fillStyle = color;
-  lines.forEach((line, i) => ctx.fillText(line, 12, fontSize + i * lh + 4));
-  return { dataUrl: canvas.toDataURL('image/png'), w: canvas.width, h: canvas.height };
-}
-
 /* ─── Add text ─── */
 function addText() {
+  if (!pdfJsDoc) { toast('先にPDFを開いてください'); return; }
   const text = document.getElementById('textContent').value.trim();
   if (!text) { toast('テキストを入力してください'); return; }
-  const page = parseInt(document.getElementById('textPage').value);
-  if (page < 1 || page > pageCount) { toast(`ページ番号は 1〜${pageCount} で指定してください`); return; }
+
   elements.push({
     id: Date.now(), type: 'text', text,
     fontSize: parseInt(document.getElementById('fontSize').value),
     color: document.getElementById('textColorHex').value || '#000000',
-    page, pos: getPos('textPosGrid')
+    page: currentPage,
+    xRatio: 0.5, yRatio: 0.5
   });
   document.getElementById('textContent').value = '';
   renderList();
-  toast('テキストをリストに追加しました ✓');
+  renderOverlay();
+  toast('追加しました。プレビュー上でドラッグして位置を調整してください ✓');
 }
 
 /* ─── Image select ─── */
@@ -457,26 +552,26 @@ function onImgSelect(input) {
 
 /* ─── Add image ─── */
 function addImage() {
+  if (!pdfJsDoc) { toast('先にPDFを開いてください'); return; }
   if (!imgData) { toast('画像を選択してください'); return; }
-  const page = parseInt(document.getElementById('imgPage').value);
-  if (page < 1 || page > pageCount) { toast(`ページ番号は 1〜${pageCount} で指定してください`); return; }
+
   elements.push({
     id: Date.now(), type: 'image',
     dataUrl: imgData, imgType,
     width: Math.max(10, parseInt(document.getElementById('imgWidth').value) || 200),
-    page, pos: getPos('imgPosGrid')
+    page: currentPage,
+    xRatio: 0.5, yRatio: 0.5
   });
   imgData = null;
   document.getElementById('imgFileInput').value = '';
   document.getElementById('imgPreview').classList.add('hidden');
   document.getElementById('imgPlaceholder').classList.remove('hidden');
   renderList();
-  toast('画像をリストに追加しました ✓');
+  renderOverlay();
+  toast('追加しました。プレビュー上でドラッグして位置を調整してください ✓');
 }
 
-/* ─── Render element list ─── */
-const POS_LABEL = { tl:'左上', tc:'上中央', tr:'右上', ml:'左中央', mc:'中央', mr:'右中央', bl:'左下', bc:'下中央', br:'右下' };
-
+/* ─── Element list ─── */
 function renderList() {
   const cnt = document.getElementById('listCount');
   cnt.textContent = elements.length;
@@ -484,15 +579,15 @@ function renderList() {
 
   const list = document.getElementById('elementList');
   if (elements.length === 0) {
-    list.innerHTML = `<div class="empty-list"><div class="el-icon">📋</div><p>テキストや画像を<br>左のフォームから追加して<br>ください</p></div>`;
+    list.innerHTML = '<div class="empty-list">テキストや画像を追加すると<br>ここに一覧が表示されます</div>';
     return;
   }
   list.innerHTML = elements.map(el => `
     <div class="el-item">
       <div class="el-icon">${el.type === 'text' ? '📝' : '🖼'}</div>
       <div class="el-info">
-        <div class="el-title">${el.type === 'text' ? escHtml(el.text.replace(/\n/g,' ').substring(0,36)) : '画像'}</div>
-        <div class="el-meta">p.${el.page} &nbsp;/&nbsp; ${POS_LABEL[el.pos] || el.pos}</div>
+        <div class="el-title">${escHtml(el.type === 'text' ? el.text.replace(/\n/g,' ').slice(0,28) : '画像')}</div>
+        <div class="el-meta">p.${el.page}</div>
       </div>
       <button class="el-del" onclick="removeEl(${el.id})" title="削除">×</button>
     </div>
@@ -502,28 +597,28 @@ function renderList() {
 function removeEl(id) {
   elements = elements.filter(e => e.id !== id);
   renderList();
+  renderOverlay();
 }
 
 function escHtml(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-/* ─── Position calculation (PDF coords: origin = bottom-left) ─── */
-function calcXY(pos, elW, elH, pageW, pageH) {
-  const m = 36;
-  const cx = (pageW - elW) / 2, cy = (pageH - elH) / 2;
-  const map = {
-    tl: [m,            pageH - m - elH],
-    tc: [cx,           pageH - m - elH],
-    tr: [pageW-m-elW,  pageH - m - elH],
-    ml: [m,            cy],
-    mc: [cx,           cy],
-    mr: [pageW-m-elW,  cy],
-    bl: [m,            m],
-    bc: [cx,           m],
-    br: [pageW-m-elW,  m],
-  };
-  return map[pos] || map['mc'];
+/* ─── Japanese text → PNG (for pdf-lib) ─── */
+function renderTextToPng(text, fontSize, color) {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  const fontStr = `${fontSize}px -apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif`;
+  ctx.font = fontStr;
+  const lines = text.split('\n');
+  const lh = fontSize * 1.55;
+  const maxW = Math.max(...lines.map(l => ctx.measureText(l).width));
+  canvas.width  = Math.ceil(maxW) + 24;
+  canvas.height = Math.ceil(lines.length * lh) + 16;
+  ctx.font = fontStr;
+  ctx.fillStyle = color;
+  lines.forEach((line, i) => ctx.fillText(line, 12, fontSize + i * lh + 4));
+  return { dataUrl: canvas.toDataURL('image/png'), w: canvas.width, h: canvas.height };
 }
 
 /* ─── Save PDF ─── */
@@ -536,6 +631,7 @@ async function savePDF() {
   btn.textContent = '⏳ 処理中...';
 
   try {
+    // Get actual PDF page sizes via pdf-lib
     const doc = await PDFDocument.load(pdfBytes);
 
     for (const el of elements) {
@@ -546,23 +642,35 @@ async function savePDF() {
 
       if (el.type === 'text') {
         const { dataUrl, w: natW, h: natH } = renderTextToPng(el.text, el.fontSize, el.color);
-        const scale = Math.min(1, (pW - 72) / natW);
+        const scale = Math.min(1, (pW - 40) / natW);
         const dW = natW * scale, dH = natH * scale;
         const base64 = dataUrl.split(',')[1];
         const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
         const img = await doc.embedPng(bytes);
-        const [x, y] = calcXY(el.pos, dW, dH, pW, pH);
-        page.drawImage(img, { x, y, width: dW, height: dH });
+        // xRatio/yRatio: 0=left/top, 1=right/bottom (screen coords)
+        // PDF: origin = bottom-left
+        const x = el.xRatio * pW - dW / 2;
+        const y = (1 - el.yRatio) * pH - dH / 2;
+        page.drawImage(img, {
+          x: Math.max(0, Math.min(pW - dW, x)),
+          y: Math.max(0, Math.min(pH - dH, y)),
+          width: dW, height: dH
+        });
 
       } else {
         const base64 = el.dataUrl.split(',')[1];
         const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
         const img = el.imgType === 'jpg' ? await doc.embedJpg(bytes) : await doc.embedPng(bytes);
         const { width: natW, height: natH } = img.size();
-        const dW = Math.min(el.width, pW - 72);
+        const dW = Math.min(el.width, pW - 40);
         const dH = (natH / natW) * dW;
-        const [x, y] = calcXY(el.pos, dW, dH, pW, pH);
-        page.drawImage(img, { x, y, width: dW, height: dH });
+        const x = el.xRatio * pW - dW / 2;
+        const y = (1 - el.yRatio) * pH - dH / 2;
+        page.drawImage(img, {
+          x: Math.max(0, Math.min(pW - dW, x)),
+          y: Math.max(0, Math.min(pH - dH, y)),
+          width: dW, height: dH
+        });
       }
     }
 
@@ -575,23 +683,20 @@ async function savePDF() {
 
   } catch(e) {
     console.error(e);
-    toast('エラーが発生しました。別のPDFでお試しください。');
+    toast('エラーが発生しました。別のPDFをお試しください。');
   } finally {
     btn.disabled = false;
-    btn.innerHTML = '📥 PDFを保存する';
+    btn.innerHTML = '📥 このまま PDF を保存する';
   }
 }
 
 /* ─── Helpers ─── */
-function show(id) { document.getElementById(id).classList.remove('hidden'); }
-function hide(id) { document.getElementById(id).classList.add('hidden'); }
-
 function toast(msg) {
   document.querySelectorAll('.toast').forEach(t => t.remove());
   const el = document.createElement('div');
   el.className = 'toast'; el.textContent = msg;
   document.body.appendChild(el);
-  setTimeout(() => el.remove(), 2800);
+  setTimeout(() => el.remove(), 3000);
 }
 </script>
 </body>
