@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ペット擬人化診断メーカー｜うちの子が人間だったら？</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif;
+  background: #fdf6ee;
+  color: #2d2319;
+  min-height: 100vh;
+}
+
+/* ───── Header ───── */
+.header {
+  text-align: center;
+  padding: 40px 16px 32px;
+}
+.badge {
+  display: inline-block;
+  background: #fff0d6; color: #b45309;
+  font-size: 12px; font-weight: 700;
+  padding: 4px 14px; border-radius: 20px; margin-bottom: 14px;
+  border: 1px solid #fcd34d;
+}
+.header h1 {
+  font-size: clamp(22px, 5vw, 32px);
+  font-weight: 900; line-height: 1.3; margin-bottom: 10px;
+}
+.header h1 span { color: #d97706; }
+.header p { color: #78716c; font-size: 14px; line-height: 1.7; }
+
+/* ───── Form card ───── */
+.card {
+  background: white;
+  border-radius: 24px;
+  padding: 28px 24px;
+  box-shadow: 0 2px 16px rgba(0,0,0,.07);
+  margin: 0 auto 20px;
+  max-width: 560px;
+}
+
+/* Photo upload */
+.photo-upload {
+  border: 2.5px dashed #fcd34d;
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .2s;
+  position: relative;
+  overflow: hidden;
+  background: #fffbeb;
+  margin-bottom: 24px;
+}
+.photo-upload:hover { border-color: #d97706; background: #fef3c7; }
+.photo-upload input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.photo-upload .pu-icon { font-size: 40px; margin-bottom: 8px; }
+.photo-upload p { font-size: 13px; color: #92400e; font-weight: 600; }
+.photo-upload p.sub { font-size: 11px; color: #a78bfa; margin-top: 3px; font-weight: 400; }
+#photoPreview {
+  width: 120px; height: 120px; object-fit: cover;
+  border-radius: 60px; border: 4px solid #fcd34d;
+  display: block; margin: 0 auto 10px;
+}
+
+/* Pet name */
+.name-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.form-group { margin-bottom: 4px; }
+label.fl {
+  display: block; font-size: 12px; font-weight: 700;
+  color: #78716c; margin-bottom: 5px;
+  text-transform: uppercase; letter-spacing: .04em;
+}
+input[type="text"], select {
+  width: 100%; padding: 10px 12px;
+  border: 1.5px solid #e5e7eb; border-radius: 10px;
+  font-size: 14px; color: #1c1917; background: #fafaf9;
+  font-family: inherit; transition: border-color .15s;
+}
+input:focus, select:focus {
+  outline: none; border-color: #d97706;
+  background: white; box-shadow: 0 0 0 3px #fef3c7;
+}
+
+/* Questions */
+.q-block { margin-bottom: 22px; }
+.q-label {
+  font-size: 14px; font-weight: 700; color: #1c1917;
+  margin-bottom: 10px; display: flex; gap: 8px; align-items: flex-start;
+}
+.q-num {
+  background: #d97706; color: white;
+  font-size: 11px; font-weight: 800;
+  padding: 2px 7px; border-radius: 20px; flex-shrink: 0; margin-top: 1px;
+}
+.options { display: flex; flex-direction: column; gap: 7px; }
+.opt {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; border: 1.5px solid #e5e7eb; border-radius: 10px;
+  cursor: pointer; transition: all .15s; background: #fafaf9;
+}
+.opt:hover { border-color: #fcd34d; background: #fffbeb; }
+.opt input[type="radio"] { display: none; }
+.opt.selected { border-color: #d97706; background: #fef3c7; }
+.opt .emo { font-size: 18px; flex-shrink: 0; }
+.opt .opt-text { font-size: 13px; font-weight: 500; color: #44403c; }
+
+/* Submit */
+.btn-submit {
+  width: 100%; padding: 16px;
+  background: linear-gradient(135deg, #d97706, #f59e0b);
+  color: white; border: none; border-radius: 16px;
+  font-size: 16px; font-weight: 900; cursor: pointer;
+  font-family: inherit; letter-spacing: .03em;
+  box-shadow: 0 4px 20px rgba(217,119,6,.35);
+  transition: transform .15s, box-shadow .15s;
+}
+.btn-submit:hover { transform: translateY(-2px); box-shadow: 0 6px 28px rgba(217,119,6,.45); }
+.btn-submit:active { transform: translateY(0); }
+
+/* ───── Result card ───── */
+.result-wrap { max-width: 560px; margin: 0 auto 40px; }
+
+.result-card {
+  background: linear-gradient(145deg, #1c1917, #292524);
+  border-radius: 28px;
+  padding: 32px 28px;
+  box-shadow: 0 8px 40px rgba(0,0,0,.25);
+  position: relative;
+  overflow: hidden;
+}
+.result-card::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 80% 20%, rgba(251,191,36,.15) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.rc-header { display: flex; align-items: center; gap: 18px; margin-bottom: 24px; }
+.rc-photo-wrap {
+  flex-shrink: 0;
+  width: 96px; height: 96px; border-radius: 48px;
+  border: 3px solid #f59e0b;
+  overflow: hidden; background: #3a3531;
+  display: flex; align-items: center; justify-content: center;
+}
+.rc-photo-wrap img { width: 100%; height: 100%; object-fit: cover; }
+.rc-photo-wrap .rc-emoji { font-size: 52px; }
+
+.rc-meta { flex: 1; min-width: 0; }
+.rc-label { font-size: 11px; font-weight: 700; color: #f59e0b; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 4px; }
+.rc-pet-name { font-size: 18px; font-weight: 900; color: white; }
+.rc-type { font-size: 13px; color: #a8a29e; margin-top: 2px; }
+
+.rc-name-block { margin-bottom: 20px; }
+.rc-human-name {
+  font-size: clamp(26px, 6vw, 36px);
+  font-weight: 900; color: #fbbf24; line-height: 1.1;
+  margin-bottom: 4px;
+}
+.rc-job {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(251,191,36,.12); border: 1px solid rgba(251,191,36,.3);
+  border-radius: 20px; padding: 4px 14px;
+  font-size: 13px; color: #fcd34d; font-weight: 600;
+}
+
+.rc-quote {
+  background: rgba(255,255,255,.06);
+  border-left: 3px solid #f59e0b;
+  border-radius: 0 12px 12px 0;
+  padding: 12px 16px; margin-bottom: 20px;
+  font-size: 15px; font-weight: 700; color: white; line-height: 1.6;
+  font-style: italic;
+}
+
+.rc-traits { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+.rc-trait {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(255,255,255,.05); border-radius: 10px;
+  padding: 10px 14px;
+}
+.rc-trait .t-icon { font-size: 20px; flex-shrink: 0; }
+.rc-trait .t-text { font-size: 13px; color: #d6d3d1; line-height: 1.5; }
+.rc-trait .t-text strong { color: white; }
+
+.rc-compat {
+  background: rgba(251,191,36,.1); border: 1px solid rgba(251,191,36,.2);
+  border-radius: 14px; padding: 12px 16px;
+  font-size: 12px; color: #fcd34d;
+}
+.rc-compat span { color: #fef3c7; font-weight: 700; }
+
+.rc-footer {
+  margin-top: 20px; padding-top: 16px;
+  border-top: 1px solid rgba(255,255,255,.08);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.rc-footer .rf-brand { font-size: 11px; color: #57534e; font-weight: 600; letter-spacing: .05em; }
+.rc-footer .rf-share { font-size: 12px; color: #f59e0b; font-weight: 700; }
+
+/* Action buttons */
+.action-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+.btn-retry {
+  padding: 12px; background: white; border: 2px solid #d97706;
+  border-radius: 12px; color: #d97706; font-size: 14px; font-weight: 700;
+  cursor: pointer; font-family: inherit; transition: all .15s;
+}
+.btn-retry:hover { background: #fffbeb; }
+.btn-share {
+  padding: 12px; background: #1da1f2; border: none;
+  border-radius: 12px; color: white; font-size: 14px; font-weight: 700;
+  cursor: pointer; font-family: inherit; transition: all .15s;
+}
+.btn-share:hover { background: #1991da; }
+
+/* Share tip */
+.share-tip {
+  background: #fffbeb; border: 1px solid #fcd34d; border-radius: 14px;
+  padding: 12px 16px; margin-top: 12px;
+  font-size: 12px; color: #92400e; line-height: 1.7; text-align: center;
+}
+
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="badge">🐾 写真をアップ → 10問 → 診断完了</div>
+  <h1>うちの子が人間だったら<br><span>どんな人になる？</span></h1>
+  <p>ペットの写真と10問に答えるだけ。<br>愛犬・愛猫の"第二の人生"を診断します。</p>
+</div>
+
+<!-- Form -->
+<div id="formSection">
+  <div class="card">
+
+    <!-- Photo -->
+    <div class="photo-upload" id="photoZone">
+      <input type="file" id="photoInput" accept="image/*">
+      <div id="photoPlaceholder">
+        <div class="pu-icon">📸</div>
+        <p>うちの子の写真をアップ</p>
+        <p class="sub">※ 写真はサーバーに送られません</p>
+      </div>
+      <img id="photoPreview" class="hidden" alt="ペットの写真">
+    </div>
+
+    <!-- Name & type -->
+    <div class="name-row">
+      <div class="form-group">
+        <label class="fl">ペットの名前</label>
+        <input type="text" id="petName" placeholder="例：もも">
+      </div>
+      <div class="form-group">
+        <label class="fl">種類</label>
+        <select id="petType">
+          <option value="dog">🐶 犬</option>
+          <option value="cat">🐱 猫</option>
+          <option value="rabbit">🐰 うさぎ</option>
+          <option value="bird">🐦 鳥</option>
+          <option value="other">🐾 その他</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Questions -->
+    <div id="questions"></div>
+
+    <button class="btn-submit" onclick="diagnose()">🔮 診断する</button>
+  </div>
+</div>
+
+<!-- Result -->
+<div id="resultSection" class="result-wrap hidden">
+  <div class="result-card" id="resultCard">
+    <div class="rc-header">
+      <div class="rc-photo-wrap" id="rcPhotoWrap">
+        <span class="rc-emoji" id="rcEmoji">🐾</span>
+      </div>
+      <div class="rc-meta">
+        <div class="rc-label">診断結果</div>
+        <div class="rc-pet-name" id="rcPetName">もも</div>
+        <div class="rc-type" id="rcType">タイプ：天然アイドル</div>
+      </div>
+    </div>
+
+    <div class="rc-name-block">
+      <div class="rc-human-name" id="rcHumanName">森野 ももこ</div>
+      <div class="rc-job" id="rcJob">🌸 幼稚園の先生</div>
+    </div>
+
+    <div class="rc-quote" id="rcQuote">「えっ、お腹すいた？ わたしも！」</div>
+
+    <div class="rc-traits" id="rcTraits"></div>
+
+    <div class="rc-compat" id="rcCompat"></div>
+
+    <div class="rc-footer">
+      <span class="rf-brand">ペット擬人化診断メーカー</span>
+      <span class="rf-share">#ペット擬人化</span>
+    </div>
+  </div>
+
+  <div class="action-btns">
+    <button class="btn-retry" onclick="retry()">🔄 もう一度診断する</button>
+    <button class="btn-share" onclick="shareX()">𝕏 Xに投稿する</button>
+  </div>
+  <div class="share-tip">
+    📸 スクリーンショットを撮って「#ペット擬人化」でシェアしてね！
+  </div>
+</div>
+
+<script>
+/* ─── Questions ─── */
+const Qs = [
+  {
+    text: '呼んだときの反応は？',
+    opts: [
+      { e: '💨', t: '即ダッシュで来る', v: 2 },
+      { e: '🐢', t: 'しばらくしてのんびり来る', v: 1 },
+      { e: '😑', t: '完全無視して動かない', v: 0 },
+    ]
+  },
+  {
+    text: 'ごはんの前の態度は？',
+    opts: [
+      { e: '🙏', t: 'おとなしくお座りして待つ', v: 0 },
+      { e: '📣', t: 'うるさく催促してくる', v: 2 },
+      { e: '😴', t: '呼ぶまで気づかない', v: 1 },
+    ]
+  },
+  {
+    text: '知らない人に会うと？',
+    opts: [
+      { e: '🤗', t: 'すぐ懐いて撫でさせる', v: 2 },
+      { e: '👀', t: 'しばらく様子を見る', v: 1 },
+      { e: '🏃', t: '逃げるか警戒する', v: 0 },
+    ]
+  },
+  {
+    text: '遊ぶときのスタイルは？',
+    opts: [
+      { e: '⚡', t: '全力で激しく動く', v: 2 },
+      { e: '🎭', t: 'マイペースに自分の世界で', v: 0 },
+      { e: '🎲', t: '気分によってまちまち', v: 1 },
+    ]
+  },
+  {
+    text: 'あなたの帰宅時の反応は？',
+    opts: [
+      { e: '🥳', t: '玄関まで大歓迎で迎える', v: 2 },
+      { e: '🛋️', t: 'ちらっと見てまた寝る', v: 0 },
+      { e: '🐾', t: 'そのうちやってくる', v: 1 },
+    ]
+  },
+  {
+    text: '一人でいるとき何してる？',
+    opts: [
+      { e: '🧸', t: 'おもちゃで遊んでいる', v: 2 },
+      { e: '💤', t: 'ずっと寝ている', v: 0 },
+      { e: '🔍', t: '家の中をパトロールしている', v: 1 },
+    ]
+  },
+  {
+    text: '鳴き声・吠え具合は？',
+    opts: [
+      { e: '🔊', t: 'よく鳴く・よく吠える', v: 2 },
+      { e: '🔕', t: 'ほとんど鳴かない', v: 0 },
+      { e: '🎵', t: '気が向いたときだけ', v: 1 },
+    ]
+  },
+  {
+    text: '寝る場所のこだわりは？',
+    opts: [
+      { e: '🛏️', t: 'いつも飼い主のそばで寝る', v: 2 },
+      { e: '🏰', t: '自分の定位置でしか寝ない', v: 0 },
+      { e: '🌍', t: 'どこでも即寝られる', v: 1 },
+    ]
+  },
+  {
+    text: 'ご飯以外で一番好きなことは？',
+    opts: [
+      { e: '🤲', t: 'なでてもらうこと', v: 2 },
+      { e: '🌿', t: '外や窓の外を眺めること', v: 1 },
+      { e: '🎯', t: '追いかけっこ・おもちゃ遊び', v: 0 },
+    ]
+  },
+  {
+    text: 'この子を一言で表すなら？',
+    opts: [
+      { e: '🍮', t: 'とにかく甘えん坊', v: 2 },
+      { e: '🌙', t: 'マイペースで謎多き存在', v: 0 },
+      { e: '⚡', t: '元気すぎてついていけない', v: 1 },
+    ]
+  },
+];
+
+/* ─── Character types ─── */
+const TYPES = [
+  {
+    id: 'idol',
+    name: '天然アイドル',
+    humanNames: { dog: '柴田 わんこ', cat: '三毛 みけこ', rabbit: '兎山 ふわり', bird: '小鳥 ぴちこ', other: '森野 もこ' },
+    jobs: { dog: '☀️ 誰もが認める人気者・元気担当', cat: '🌸 マイペースな読者モデル', rabbit: '🌼 カフェ店員（看板娘）', bird: '🎤 ユーチューバー（歌ってみた系）', other: '🌈 インフルエンサー' },
+    quote: '「えっ、なんでそんなに私のことじっと見てるの〜？ まあいいけど！」',
+    traits: [
+      { e: '💖', title: '誰にでも全力で愛される', desc: '初対面でも3分でその場の主役になれる。天性のオーラがある。' },
+      { e: '🧠', title: '意外と鋭い観察眼', desc: 'ぼーっとしているように見えて、実は場の空気を読んでいる。' },
+      { e: '😴', title: '切り替えが神速', desc: '全力で遊んだかと思えば即爆睡。エネルギー管理が独特。' },
+    ],
+    compat: '相性の良い人間タイプ：<span>「世話好きで常に誰かを応援している人」</span>',
+  },
+  {
+    id: 'boss',
+    name: '頼れる部長',
+    humanNames: { dog: '犬山 番太郎', cat: '黒木 まろ', rabbit: '白坂 もちお', bird: '鳴海 じゅん', other: '田中 べん' },
+    jobs: { dog: '💼 中堅企業の営業部長', cat: '🏛️ 老舗料亭の若大将', rabbit: '📋 マネージャー（厳格系）', bird: '🎙️ ラジオMC', other: '🔑 マンションの管理人' },
+    quote: '「俺が来たからにはもう大丈夫だ。全部わかってるぞ。」',
+    traits: [
+      { e: '👁️', title: '鋭すぎる状況判断力', desc: 'テリトリーの変化を察知する能力が異常に高い。何かあるとすぐ気づく。' },
+      { e: '🤝', title: '責任感が強い', desc: '自分の縄張り・家族を守ることへの使命感が人一倍強い。' },
+      { e: '🍖', title: '食事への情熱が本物', desc: 'ごはんの時間だけは別人格。全集中で向き合う。' },
+    ],
+    compat: '相性の良い人間タイプ：<span>「一緒にいると安心できる、穏やかで安定した人」</span>',
+  },
+  {
+    id: 'artist',
+    name: '孤高の芸術家',
+    humanNames: { dog: '遠山 ぽっち', cat: '黒猫 くろすけ', rabbit: '月本 しらたま', bird: '空飛 そら', other: '謎本 なぞお' },
+    jobs: { dog: '🎨 路上アーティスト（独自の世界観）', cat: '📸 コンセプトフォトグラファー', rabbit: '🎭 舞台俳優（難解な一人芝居専門）', bird: '🎼 電子音楽家', other: '🔭 哲学者（無職とも言う）' },
+    quote: '「……（長い沈黙）……そうか。」',
+    traits: [
+      { e: '🌌', title: '謎の多い内面世界', desc: 'いつも何かを考えているようで、考えていないようで……誰にも本当のことはわからない。' },
+      { e: '🎭', title: '表情がほぼ変わらない', desc: '喜んでいるのか怒っているのか判断が難しい。でも機嫌は読める人には読める。' },
+      { e: '✨', title: '気まぐれな行動が神がかり的', desc: '突然走り出す、突然止まる。理由は本人のみぞ知る。' },
+    ],
+    compat: '相性の良い人間タイプ：<span>「相手のペースを尊重できる、静かで観察力のある人」</span>',
+  },
+  {
+    id: 'athlete',
+    name: '熱血スポーツマン',
+    humanNames: { dog: '元気 がくと', cat: '飛石 とびこ', rabbit: '跳田 ぴょん太', bird: '風間 かける', other: '走井 ぱわお' },
+    jobs: { dog: '⚽ プロスポーツ選手（人気実力共にトップ）', cat: '🏋️ パーソナルトレーナー', rabbit: '🥇 オリンピック候補選手', bird: '🏆 体育教師（生徒に大人気）', other: '🚴 トライアスロン選手' },
+    quote: '「全力でいこう！　あ、ごはんの時間だ。全力で食べよう！」',
+    traits: [
+      { e: '⚡', title: 'エネルギーが無限', desc: '朝起きた瞬間からMAXで動いている。なぜ疲れないのか全く不明。' },
+      { e: '😤', title: '負けず嫌いが隠れている', desc: 'おもちゃを取られると絶対に取り返しに来る。勝負事への執念がある。' },
+      { e: '🍗', title: 'ご飯も全力', desc: '食べる速さと食べる量が人間基準で見ると完全に選手レベル。' },
+    ],
+    compat: '相性の良い人間タイプ：<span>「一緒に外遊びや運動を楽しめる、アクティブな人」</span>',
+  },
+  {
+    id: 'homebody',
+    name: 'ほのぼの主婦/主夫',
+    humanNames: { dog: '柳田 のどか', cat: '三毛 ほのか', rabbit: '白川 ゆるり', bird: '小春 のんこ', other: '平山 まったり' },
+    jobs: { dog: '🏠 専業主婦（家の守り神）', cat: '☕ カフェオーナー（看板猫もいる）', rabbit: '🌿 ハーブ農家', bird: '📻 のんびり系ラジオパーソナリティ', other: '🛋️ 快適生活研究家' },
+    quote: '「今日もいい天気ね。……ねむい。」',
+    traits: [
+      { e: '💤', title: '睡眠のプロ', desc: '日中の睡眠時間の長さと質が人間ならオリンピック代表レベル。' },
+      { e: '🌡️', title: '快適温度への執着', desc: '寒すぎても暑すぎてもNG。快適な場所を求める行動力だけは人並み以上。' },
+      { e: '🧸', title: '静かに側にいてくれる', desc: '求めてないのにそっと寄り添ってくれる。存在が癒し。' },
+    ],
+    compat: '相性の良い人間タイプ：<span>「一緒にまったり過ごすことに幸せを感じる、のんびり屋さん」</span>',
+  },
+  {
+    id: 'genius',
+    name: '隠れ天才',
+    humanNames: { dog: '天才 わんたろう', cat: '黒木 けんじ', rabbit: '月白 さとし', bird: '空知 ひろ', other: '不思議 みらい' },
+    jobs: { dog: '🔬 研究者（人に言わないが論文が多数）', cat: '💻 フリーランスエンジニア（高収入）', rabbit: '📊 データアナリスト', bird: '🎓 大学院生（奨学金全額免除）', other: '🧩 謎解きクリエイター' },
+    quote: '「それはね、……（3秒沈黙）……まあいいか。」',
+    traits: [
+      { e: '🔍', title: '観察力が人間レベルを超えている', desc: '何かを凝視しているとき、確実に何かを分析している。何を見ているかは不明。' },
+      { e: '🗝️', title: '学習能力が異常に高い', desc: '一度覚えたことは絶対忘れない。特にごはんの時間と場所は完璧に記憶。' },
+      { e: '😏', title: '意外と感情的', desc: '普段は冷静に見えるが、急にテンション上がる。その落差が人間っぽい。' },
+    ],
+    compat: '相性の良い人間タイプ：<span>「知的好奇心が旺盛で、相手のことをちゃんと観察できる人」</span>',
+  },
+];
+
+/* ─── Build questions ─── */
+const answers = new Array(Qs.length).fill(null);
+
+function buildQuestions() {
+  const container = document.getElementById('questions');
+  container.innerHTML = Qs.map((q, qi) => `
+    <div class="q-block">
+      <div class="q-label">
+        <span class="q-num">Q${qi + 1}</span>
+        ${q.text}
+      </div>
+      <div class="options">
+        ${q.opts.map((o, oi) => `
+          <label class="opt" id="opt_${qi}_${oi}">
+            <input type="radio" name="q${qi}" value="${oi}" onchange="selectOpt(${qi}, ${oi})">
+            <span class="emo">${o.e}</span>
+            <span class="opt-text">${o.t}</span>
+          </label>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectOpt(qi, oi) {
+  // Clear previous selection for this question
+  Qs[qi].opts.forEach((_, i) => {
+    document.getElementById(`opt_${qi}_${i}`)?.classList.remove('selected');
+  });
+  document.getElementById(`opt_${qi}_${oi}`)?.classList.add('selected');
+  answers[qi] = Qs[qi].opts[oi].v;
+}
+
+/* ─── Photo upload ─── */
+document.getElementById('photoInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const prev = document.getElementById('photoPreview');
+    prev.src = ev.target.result;
+    prev.classList.remove('hidden');
+    document.getElementById('photoPlaceholder').classList.add('hidden');
+  };
+  reader.readAsDataURL(file);
+});
+
+/* ─── Diagnose ─── */
+function diagnose() {
+  const unanswered = answers.findIndex(a => a === null);
+  if (unanswered !== -1) {
+    const el = document.getElementById('questions').querySelectorAll('.q-block')[unanswered];
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.style.animation = 'none';
+    el.offsetHeight;
+    el.style.outline = '2px solid #d97706';
+    el.style.borderRadius = '12px';
+    setTimeout(() => el.style.outline = '', 1500);
+    return;
+  }
+
+  const petName = document.getElementById('petName').value.trim() || 'うちの子';
+  const petType = document.getElementById('petType').value;
+
+  // Score calculation
+  const total = answers.reduce((s, v) => s + v, 0);
+  const social = answers[0] + answers[2] + answers[4] + answers[6]; // 社交性
+  const energy = answers[3] + answers[5] + answers[9];              // 活発度
+  const attach = answers[7] + answers[8];                           // 依存度
+
+  let typeIdx;
+  if (social >= 6 && energy >= 3) typeIdx = 3;       // 熱血スポーツマン
+  else if (social >= 6 && attach >= 3) typeIdx = 0;  // 天然アイドル
+  else if (social >= 5 && energy >= 2) typeIdx = 1;  // 頼れる部長
+  else if (energy <= 1 && social <= 2) typeIdx = 2;  // 孤高の芸術家
+  else if (attach <= 2 && energy <= 2) typeIdx = 4;  // ほのぼの主婦
+  else if (total >= 13) typeIdx = 5;                 // 隠れ天才
+  else typeIdx = Math.floor(total / 4) % TYPES.length;
+
+  const type = TYPES[typeIdx];
+  const humanName = type.humanNames[petType] || type.humanNames.other;
+  const job = type.jobs[petType] || type.jobs.other;
+
+  // Photo
+  const photoSrc = document.getElementById('photoPreview').src;
+  const rcPhotoWrap = document.getElementById('rcPhotoWrap');
+  if (photoSrc && !document.getElementById('photoPreview').classList.contains('hidden')) {
+    rcPhotoWrap.innerHTML = `<img src="${photoSrc}" alt="${petName}">`;
+  } else {
+    const emoMap = { dog: '🐶', cat: '🐱', rabbit: '🐰', bird: '🐦', other: '🐾' };
+    rcPhotoWrap.innerHTML = `<span class="rc-emoji">${emoMap[petType]}</span>`;
+  }
+
+  // Fill result
+  document.getElementById('rcPetName').textContent = petName;
+  document.getElementById('rcType').textContent = `タイプ：${type.name}`;
+  document.getElementById('rcHumanName').textContent = humanName;
+  document.getElementById('rcJob').textContent = job;
+  document.getElementById('rcQuote').textContent = type.quote;
+  document.getElementById('rcCompat').innerHTML = type.compat;
+
+  document.getElementById('rcTraits').innerHTML = type.traits.map(t => `
+    <div class="rc-trait">
+      <span class="t-icon">${t.e}</span>
+      <span class="t-text"><strong>${t.title}</strong><br>${t.desc}</span>
+    </div>
+  `).join('');
+
+  // Switch view
+  document.getElementById('formSection').classList.add('hidden');
+  document.getElementById('resultSection').classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // Store for share
+  window._shareData = { petName, humanName, typeName: type.name, job };
+}
+
+function retry() {
+  answers.fill(null);
+  document.querySelectorAll('.opt').forEach(o => o.classList.remove('selected'));
+  document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+  document.getElementById('formSection').classList.remove('hidden');
+  document.getElementById('resultSection').classList.add('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function shareX() {
+  const d = window._shareData || {};
+  const text = `うちの子「${d.petName}」を擬人化したら…\n\n「${d.humanName}」（${d.typeName}）でした！\n職業：${d.job}\n\n▼無料で診断してみる\nhttps://ai-hack-dx.github.io/note-tools/pet-maker.html\n\n#ペット擬人化 #うちの子自慢`;
+  window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+}
+
+/* ─── Init ─── */
+buildQuestions();
+</script>
+</body>
+</html>
