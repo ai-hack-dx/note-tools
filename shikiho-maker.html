@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>人物四季報メーカー｜あなたを会社にしたら何会社？</title>
+<style>
+  :root{ --navy:#16324f; --red:#c8102e; --blue:#1769aa; --paper:#fffdf6; --line:#ddd6c7; --ink:#23211c; --sub:#8b8472; --gold:#b8902f; }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:linear-gradient(165deg,#eef2f6 0%,#f7f4ec 60%,#f1ece0 100%); font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; color:var(--ink); padding:24px 12px; line-height:1.7; }
+  .wrap{max-width:560px;margin:0 auto;}
+  h1.app{font-size:21px;text-align:center;letter-spacing:.06em;margin:0 0 4px;color:var(--navy);}
+  p.lead{text-align:center;color:var(--sub);font-size:13px;margin:0 0 22px;}
+  .panel{background:#fff;border:1px solid #e3ddcf;border-radius:10px;padding:18px;margin-bottom:22px;box-shadow:0 4px 16px rgba(22,50,79,.10);}
+  label{font-size:13px;font-weight:bold;display:block;margin-bottom:6px;}
+  input[type=text]{width:100%;padding:11px 12px;font-size:16px;border:1px solid #d6cfbf;border-radius:8px;background:#fffdf8;}
+  .rels{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+  .rels button{font-size:14px;padding:9px 12px;border:1px solid #ccc;background:#fafafa;border-radius:999px;cursor:pointer;transition:.15s;}
+  .rels button.on{background:var(--navy);border-color:var(--navy);color:#fff;}
+  .go{margin-top:16px;width:100%;padding:14px;font-size:16px;font-weight:bold;color:#fff;background:var(--red);border:none;border-radius:9px;cursor:pointer;letter-spacing:.08em;}
+  .go:active{opacity:.85;}
+  .hidden{display:none !important;}
+
+  /* ===== 四季報カード ===== */
+  .card{background:var(--paper);border:1px solid var(--navy);border-radius:6px;position:relative;padding:0;box-shadow:0 8px 28px rgba(22,50,79,.16);overflow:hidden;}
+  .ctop{background:var(--navy);color:#fff;display:flex;justify-content:space-between;align-items:center;padding:7px 14px;}
+  .ctop .brand{font-size:10px;letter-spacing:.28em;}
+  .ctop .vol{font-size:10px;letter-spacing:.1em;font-family:"Courier New",monospace;opacity:.85;}
+  .chead{padding:13px 16px 6px;display:flex;justify-content:space-between;align-items:flex-end;gap:10px;border-bottom:2px solid var(--navy);}
+  .chead .co{flex:1;}
+  .chead .code{font-size:11px;color:var(--sub);font-family:"Courier New",monospace;letter-spacing:.12em;}
+  .chead .name{font-size:23px;font-weight:bold;color:var(--navy);letter-spacing:.04em;line-height:1.2;margin-top:2px;}
+  .chead .mkt{display:inline-block;font-size:10px;color:#fff;background:var(--gold);border-radius:3px;padding:1px 7px;margin-top:6px;}
+  .rate{flex-shrink:0;width:66px;height:66px;border:2px solid var(--red);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,255,255,.6);transform:rotate(-6deg);}
+  .rate .rg{font-size:25px;font-weight:bold;color:var(--red);line-height:1;font-family:"Courier New",monospace;}
+  .rate .rl{font-size:9px;color:var(--red);letter-spacing:.14em;margin-top:2px;}
+  .px{display:flex;align-items:center;gap:12px;padding:10px 16px 6px;}
+  .px .now{font-size:13px;}
+  .px .now b{font-size:22px;font-family:"Courier New",monospace;color:var(--ink);}
+  .px .chg{font-size:13px;font-weight:bold;font-family:"Courier New",monospace;}
+  .px .up{color:var(--red);} .px .down{color:var(--blue);}
+  .px svg{margin-left:auto;}
+  .seg{margin:2px 16px 0;padding:9px 12px;background:#fbf8ee;border:1px solid var(--line);border-radius:5px;font-size:13px;}
+  .seg .h{font-size:11px;color:var(--navy);font-weight:bold;letter-spacing:.08em;margin-bottom:3px;}
+  .news{display:flex;gap:10px;padding:10px 16px 4px;flex-wrap:wrap;}
+  .news .blk{flex:1;min-width:200px;}
+  .news .bh{display:inline-block;font-size:11px;font-weight:bold;color:#fff;padding:2px 8px;border-radius:3px;letter-spacing:.06em;}
+  .news .bh.p{background:var(--red);} .news .bh.c{background:var(--navy);}
+  .news .bt{font-size:12.5px;margin-top:5px;color:#34302a;}
+  .perf{padding:8px 16px 4px;}
+  .perf .ph{font-size:11px;color:var(--navy);font-weight:bold;letter-spacing:.08em;margin-bottom:6px;border-left:3px solid var(--red);padding-left:6px;}
+  .bar{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:11px;}
+  .bar .bl{width:118px;color:#4a463d;}
+  .bar .bx{flex:1;height:9px;background:#ece6d8;border-radius:5px;overflow:hidden;}
+  .bar .bf{height:100%;background:linear-gradient(90deg,var(--navy),var(--red));border-radius:5px;}
+  .bar .bv{width:30px;text-align:right;font-family:"Courier New",monospace;color:var(--ink);font-weight:bold;}
+  .cfoot{border-top:1px solid var(--line);margin:8px 16px 0;padding:8px 0 14px;font-size:10px;color:var(--sub);display:flex;justify-content:space-between;align-items:center;}
+  .actions{display:flex;gap:10px;margin-top:16px;}
+  .actions button{flex:1;padding:12px;font-size:14px;border:1px solid var(--navy);background:#fff;border-radius:9px;cursor:pointer;font-weight:bold;color:var(--navy);}
+  .actions button.gacha{background:var(--navy);color:#fff;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 class="app">人物四季報メーカー</h1>
+  <p class="lead">あなたを「会社」にしたら何会社？ 名前と業種を入れるだけで、四季報風プロフィールを発行します。</p>
+
+  <div class="panel">
+    <label>① あなた（社名にする名前）</label>
+    <input type="text" id="nm" placeholder="例：田中" maxlength="16" autocomplete="off">
+    <label style="margin-top:16px;">② 業種（いちばん近い気分）</label>
+    <div class="rels" id="rels"></div>
+    <button class="go" id="go">四季報を発行する</button>
+  </div>
+
+  <div class="card hidden" id="card">
+    <div class="ctop">
+      <span class="brand">JINBUTSU SHIKIHO</span>
+      <span class="vol" id="vol">2026年 夏号</span>
+    </div>
+    <div class="chead">
+      <div class="co">
+        <div class="code" id="code">［____］東P</div>
+        <div class="name" id="cname">―</div>
+        <span class="mkt" id="ind">―</span>
+      </div>
+      <div class="rate">
+        <div class="rg" id="rg">―</div>
+        <div class="rl">格付</div>
+      </div>
+    </div>
+    <!-- 認定シール（格付）は .rate に統合 -->
+    <div class="px">
+      <div class="now">株価 <b id="now">¥----</b></div>
+      <div class="chg" id="chg">―</div>
+      <svg id="spark" width="120" height="40" viewBox="0 0 120 40"></svg>
+    </div>
+    <div class="seg">
+      <div class="h">【特色】</div>
+      <span id="tokushoku">―</span>
+    </div>
+    <div class="news">
+      <div class="blk"><span class="bh p" id="ph">【―】</span><div class="bt" id="pbody">―</div></div>
+      <div class="blk"><span class="bh c" id="ch">【―】</span><div class="bt" id="cbody">―</div></div>
+    </div>
+    <div class="perf">
+      <div class="ph">業績ハイライト</div>
+      <div id="bars"></div>
+    </div>
+    <div class="cfoot">
+      <span>発行：人物四季報編集部</span>
+      <span id="issue">査定方式：決定論ハッシュ v1</span>
+    </div>
+  </div>
+
+  <div class="actions hidden" id="actions">
+    <button class="gacha" id="gacha">もう一度発行</button>
+    <button id="reset">入力をやり直す</button>
+  </div>
+</div>
+
+<script>
+const CATS = [["IT・テック","💻"],["エンタメ","🎬"],["商社・万能","🌐"],["製造・職人","🔧"],["フード","🍙"],["クリエイティブ","🎨"],["金融","💴"],["ヘルスケア","🩺"]];
+let cat=null;
+const relBox=document.getElementById('rels');
+CATS.forEach(([name,emo])=>{
+  const btn=document.createElement('button'); btn.textContent=emo+" "+name;
+  btn.onclick=()=>{ cat=name; [...relBox.children].forEach(c=>c.classList.remove('on')); btn.classList.add('on'); };
+  relBox.appendChild(btn);
+});
+
+// 決定論ハッシュ（同入力＝同結果）
+function hash(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619);}return Math.abs(h);}
+
+const MARKETS=["東P","東S","東G"];
+const SUFFIX=["株式会社","ホールディングス","製作所","商事","コーポレーション","ラボラトリーズ"];
+const METRICS=["売上高（行動量）","営業利益率（成果効率）","自己資本比率（安定感）","成長率（伸びしろ）"];
+
+const TOKU=[
+ "頼まれごとは断らない万能型。${c}を軸に多角展開し、気づけば組織のハブになっている。",
+ "一点突破の専門特化型。${c}分野では右に出る者がいないと社内外で評判。",
+ "段取りと根回しで回す調整型。${c}の現場を静かに最適化する縁の下の力持ち。",
+ "勢いと行動量で押し切る拡大型。${c}で次々と新規を開拓、止まると死ぬマグロ体質。",
+ "品質とこだわりで勝負する職人型。${c}の細部に一切妥協しない高付加価値路線。",
+ "場を温めるムードメーカー型。${c}の現場の空気と士気を一手に支える。"
+];
+const POS_H=["増収増益","絶好調","上方修正","新規開拓","過去最高","追い風"];
+const POS_B=[
+ "得意分野に資源を集中させてから一気に伸長。今の波に乗れば年内はさらに上振れの公算。",
+ "周囲からの信頼が積み上がり、放っておいても仕事と縁が集まる好循環に突入した。",
+ "苦手を捨てて強みに全振りしたのが奏功。効率が跳ね上がり、余力すら生まれつつある。",
+ "小さな実績の積み重ねがブランドに転化。指名で相談が来る『第一想起』を確立した。"
+];
+const CAU_H=["死角","要注意","過熱","在庫過多","先行投資","息切れ警戒"];
+const CAU_B=[
+ "手を広げすぎて一人当たりの負荷が増大。優先順位の整理が次の最重要課題に。",
+ "好調ゆえに『自分でやった方が早い』が口癖化。権限委譲の遅れが成長の頭打ち要因。",
+ "休む技術が未成熟。回復への先行投資（睡眠・余白）を怠ると来期に反動が出やすい。",
+ "完璧主義が納期を圧迫する局面も。6割で出して直す運用への転換が伸びしろの鍵。"
+];
+const RATE=[[90,"AAA","死角の少ない超優良銘柄。中長期で安心して持てる。"],
+ [80,"AA","成長と安定を両立。地力が高く崩れにくい筋肉質な経営。"],
+ [70,"A","堅実な実力派。強みを磨けば一段の上値も狙える。"],
+ [60,"BBB","ポテンシャル株。化ける条件は揃っており、あとは選択と集中。"],
+ [0,"BB","低位の妙味株。今は割安だが、伸びしろは全銘柄でも随一。"]];
+
+let lastExtra=0;
+function pick(arr,n){return arr[n%arr.length];}
+function rate(s){for(const[t,g,c]of RATE){if(s>=t)return[g,c];}return["BB",""];}
+
+function drawSpark(seed,score){
+  const svg=document.getElementById('spark'); svg.innerHTML="";
+  const NS="http://www.w3.org/2000/svg", N=18, W=120, H=40, pad=4;
+  const bias=(score-60)/100; // 高評価ほど右肩上がり
+  let v=50, pts=[];
+  for(let i=0;i<N;i++){
+    const d=((hash(seed+"_s"+i)%21)-10) + bias*7;
+    v=Math.max(8,Math.min(92,v+d));
+    const x=pad+(W-2*pad)*i/(N-1);
+    const y=H-pad-(H-2*pad)*v/100;
+    pts.push([x,y]);
+  }
+  const up=pts[N-1][1]<=pts[0][1];
+  const col=up?getCSS('--red'):getCSS('--blue');
+  const poly=document.createElementNS(NS,"polyline");
+  poly.setAttribute("points",pts.map(p=>p[0].toFixed(1)+","+p[1].toFixed(1)).join(" "));
+  poly.setAttribute("fill","none");poly.setAttribute("stroke",col);poly.setAttribute("stroke-width","2");
+  poly.setAttribute("stroke-linejoin","round");poly.setAttribute("stroke-linecap","round");
+  svg.appendChild(poly);
+  const dot=document.createElementNS(NS,"circle");
+  dot.setAttribute("cx",pts[N-1][0]);dot.setAttribute("cy",pts[N-1][1]);dot.setAttribute("r","2.5");dot.setAttribute("fill",col);
+  svg.appendChild(dot);
+}
+function getCSS(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+
+function render(extra){
+  const nm=(document.getElementById('nm').value.trim()||"あなた");
+  const key=nm+"@"+cat;
+  const base=hash(key);
+  const seed=key+"_"+extra;
+  const s=hash(seed);
+  lastExtra=extra;
+
+  const suffix=pick(SUFFIX,hash(seed+"_sfx"));
+  const mkt=pick(MARKETS,hash(seed+"_mkt"));
+  const code=1000+ (hash(seed+"_cd")%8999);
+  const scores=METRICS.map((_,i)=> 42 + (hash(seed+"_m"+i)%57));
+  const avg=Math.round(scores.reduce((p,c)=>p+c,0)/scores.length);
+  const [rg,rcmt]=rate(avg);
+  const now=1200+ (hash(seed+"_px")%8600);
+  const chgv=(((hash(seed+"_ch")%1400)/100)-4.5); // -4.5〜+9.5%
+  const chgUp=chgv>=0;
+
+  document.getElementById('code').textContent="［"+code+"］"+mkt;
+  document.getElementById('cname').textContent=nm+" "+suffix;
+  document.getElementById('ind').textContent="業種："+cat;
+  document.getElementById('rg').textContent=rg;
+  document.getElementById('now').textContent="¥"+now.toLocaleString();
+  const chgEl=document.getElementById('chg');
+  chgEl.textContent=(chgUp?"▲ +":"▼ ")+chgv.toFixed(1)+"%";
+  chgEl.className="chg "+(chgUp?"up":"down");
+  drawSpark(seed,avg);
+
+  document.getElementById('tokushoku').textContent=pick(TOKU,hash(seed+"_tk")).replace("${c}",cat);
+  document.getElementById('ph').textContent="【"+pick(POS_H,hash(seed+"_ph"))+"】";
+  document.getElementById('pbody').textContent=pick(POS_B,hash(seed+"_pb"));
+  document.getElementById('ch').textContent="【"+pick(CAU_H,hash(seed+"_chh"))+"】";
+  document.getElementById('cbody').textContent=pick(CAU_B,hash(seed+"_cb"));
+
+  document.getElementById('bars').innerHTML=METRICS.map((m,i)=>
+    `<div class="bar"><span class="bl">${m}</span><span class="bx"><span class="bf" style="width:${scores[i]}%"></span></span><span class="bv">${scores[i]}</span></div>`
+  ).join("");
+
+  document.getElementById('card').classList.remove('hidden');
+  document.getElementById('actions').classList.remove('hidden');
+}
+
+document.getElementById('go').onclick=()=>{
+  if(!document.getElementById('nm').value.trim()){ alert("名前を入れてください"); return; }
+  if(!cat){ alert("業種を選んでください"); return; }
+  render(0);
+  document.getElementById('card').scrollIntoView({behavior:'smooth'});
+};
+document.getElementById('gacha').onclick=()=> render(lastExtra+1);
+document.getElementById('reset').onclick=()=>{
+  document.getElementById('card').classList.add('hidden');
+  document.getElementById('actions').classList.add('hidden');
+  window.scrollTo({top:0,behavior:'smooth'});
+};
+</script>
+</body>
+</html>
