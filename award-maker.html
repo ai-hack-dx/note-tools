@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI表彰状メーカー｜名前とがんばったことを入れるだけ</title>
+<style>
+  :root{
+    --ink:#2a2620; --paper:#fffdf4; --gold:#b8902f; --gold2:#e8c873; --red:#b3302b; --sub:#8c8470; --line:#d8caa0;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:linear-gradient(160deg,#efe9da 0%,#f6f1e3 55%,#ece3cf 100%); font-family:"Hiragino Mincho ProN","Yu Mincho",serif; color:var(--ink); padding:24px 12px; line-height:1.8; }
+  .wrap{max-width:560px;margin:0 auto;}
+  h1.app{font-size:21px;text-align:center;letter-spacing:.08em;margin:0 0 4px;font-family:"Hiragino Kaku Gothic ProN",sans-serif;color:#5a4a1f;}
+  p.lead{text-align:center;color:var(--sub);font-size:13px;margin:0 0 22px;font-family:"Hiragino Kaku Gothic ProN",sans-serif;}
+  .panel{background:#fff;border:1px solid #e7ddc2;border-radius:10px;padding:18px;margin-bottom:22px;box-shadow:0 4px 16px rgba(120,90,20,.10);font-family:"Hiragino Kaku Gothic ProN",sans-serif;}
+  label{font-size:13px;font-weight:bold;display:block;margin-bottom:6px;}
+  input[type=text]{width:100%;padding:11px 12px;font-size:16px;border:1px solid #ddd0ab;border-radius:8px;background:#fffefb;font-family:inherit;}
+  .hint{font-size:11px;color:var(--sub);margin:4px 0 0;}
+  .tones{display:flex;gap:8px;margin-top:8px;}
+  .tones button{flex:1;font-size:14px;padding:10px;border:1px solid #ccc;background:#fafafa;border-radius:999px;cursor:pointer;transition:.15s;font-family:inherit;}
+  .tones button.on{background:var(--red);border-color:var(--red);color:#fff;}
+  .go{margin-top:16px;width:100%;padding:14px;font-size:16px;font-weight:bold;color:#fff;background:linear-gradient(135deg,#9c7a25,#b8902f);border:none;border-radius:9px;cursor:pointer;letter-spacing:.1em;font-family:"Hiragino Kaku Gothic ProN",sans-serif;}
+  .go:active{opacity:.85;}
+  .hidden{display:none !important;}
+
+  /* ===== 表彰状カード ===== */
+  .cert{position:relative;background:var(--paper);background-image:radial-gradient(circle at 50% 0%, #fffef9, #fbf6e7 70%);padding:30px 26px 28px;box-shadow:0 10px 34px rgba(120,90,20,.22);border:2px solid var(--gold);}
+  .cert::before{content:"";position:absolute;inset:9px;border:1px solid var(--gold);pointer-events:none;}
+  .cert::after{content:"";position:absolute;inset:13px;border:1px solid rgba(184,144,47,.35);pointer-events:none;}
+  .corner{position:absolute;width:18px;height:18px;border:2px solid var(--gold);z-index:2;}
+  .corner.tl{top:14px;left:14px;border-right:none;border-bottom:none;}
+  .corner.tr{top:14px;right:14px;border-left:none;border-bottom:none;}
+  .corner.bl{bottom:14px;left:14px;border-right:none;border-top:none;}
+  .corner.br{bottom:14px;right:14px;border-left:none;border-top:none;}
+  .cinner{position:relative;z-index:1;text-align:center;}
+  .ctitle{font-size:34px;letter-spacing:.5em;font-weight:bold;margin:6px 0 2px;padding-left:.5em;
+    background:linear-gradient(180deg,#d9b24e 0%,#a9821f 45%,#e8c873 60%,#9c7a25 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .cno{font-size:10px;color:var(--sub);font-family:"Courier New",monospace;letter-spacing:.18em;margin-bottom:14px;}
+  .cname{font-size:24px;font-weight:bold;letter-spacing:.06em;border-bottom:1px solid var(--line);display:inline-block;padding:0 14px 6px;margin-bottom:4px;}
+  .cname .dono{font-size:15px;margin-left:10px;color:#4a4334;font-weight:normal;}
+  .cprize{margin:14px auto 12px;display:inline-block;font-size:16px;font-weight:bold;color:var(--red);border:1px solid var(--red);border-radius:4px;padding:4px 16px;letter-spacing:.12em;background:rgba(179,48,43,.04);}
+  .cbody{font-size:14.5px;text-align:left;margin:6px 6px 16px;line-height:2;color:#332f26;}
+  .cfoot{display:flex;justify-content:space-between;align-items:flex-end;margin:18px 6px 0;padding-right:88px;font-family:"Hiragino Kaku Gothic ProN",sans-serif;}
+  .cdate{font-size:12px;color:#4a4334;}
+  .cissuer{font-size:13px;color:var(--ink);text-align:right;}
+  .cissuer .org{font-size:15px;font-weight:bold;letter-spacing:.04em;}
+  .seal{position:absolute;right:26px;bottom:34px;width:62px;height:62px;border:2.5px solid var(--red);color:var(--red);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:bold;font-family:"Hiragino Mincho ProN",serif;transform:rotate(-7deg);background:rgba(179,48,43,.05);box-shadow:inset 0 0 0 3px rgba(179,48,43,.12);letter-spacing:.04em;}
+  .actions{display:flex;gap:10px;margin-top:16px;font-family:"Hiragino Kaku Gothic ProN",sans-serif;}
+  .actions button{flex:1;padding:12px;font-size:14px;border:1px solid var(--ink);background:#fff;border-radius:9px;cursor:pointer;font-weight:bold;}
+  .actions button.gacha{background:var(--ink);color:#fff;}
+  .note{font-size:11px;color:var(--sub);text-align:center;margin-top:10px;font-family:"Hiragino Kaku Gothic ProN",sans-serif;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 class="app">AI表彰状メーカー</h1>
+  <p class="lead">名前と「最近がんばったこと」を入れるだけ。あなただけの表彰状を発行します。</p>
+
+  <div class="panel">
+    <label>① 受け取る人の名前</label>
+    <input type="text" id="nm" placeholder="例：あなた／お父さん／自分" maxlength="18" autocomplete="off">
+    <label style="margin-top:16px;">② 最近がんばったこと</label>
+    <input type="text" id="effort" placeholder="例：毎朝のお弁当作り／資格の勉強" maxlength="40" autocomplete="off">
+    <p class="hint">そのまま賞状の本文に入ります。短い言葉でOK。</p>
+    <label style="margin-top:16px;">③ トーン</label>
+    <div class="tones" id="tones"></div>
+    <button class="go" id="go">表彰状を発行する</button>
+  </div>
+
+  <div class="cert hidden" id="card">
+    <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+    <div class="cinner">
+      <div class="ctitle">表彰状</div>
+      <div class="cno" id="cno">No. ____-____</div>
+      <div class="cname"><span id="cname">―</span><span class="dono">殿</span></div>
+      <div class="cprize" id="cprize">―</div>
+      <p class="cbody" id="cbody">―</p>
+      <div class="cfoot">
+        <div class="cdate" id="cdate">―</div>
+        <div class="cissuer"><div>発行</div><div class="org">今日から使えるAI実践帳</div></div>
+      </div>
+    </div>
+    <div class="seal" id="seal">賞</div>
+  </div>
+
+  <div class="actions hidden" id="actions">
+    <button class="gacha" id="gacha">別の賞で発行</button>
+    <button id="reset">入力をやり直す</button>
+  </div>
+  <p class="note hidden" id="savenote">スクリーンショットで保存してSNSにシェアできます</p>
+</div>
+
+<script>
+const TONES = [["まじめ","🎖️"],["ユーモア","😆"]];
+let tone = null;
+const tBox = document.getElementById('tones');
+TONES.forEach(([name,emo])=>{
+  const b=document.createElement('button'); b.textContent=emo+" "+name;
+  b.onclick=()=>{ tone=name; [...tBox.children].forEach(c=>c.classList.remove('on')); b.classList.add('on'); };
+  tBox.appendChild(b);
+});
+
+// 決定論ハッシュ（同入力＝同結果）
+function hash(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619);}return Math.abs(h);}
+
+const SHOU_MAJIME = ["努力賞","敢闘賞","精進賞","継続大賞","自分超え賞","ベストエフォート賞","不屈賞","栄誉賞","最優秀がんばり賞","金賞"];
+const SHOU_YUMOR  = ["よくやった大賞","自分えらい賞","とりあえず生きてる金賞","がんばりすぎ注意賞","明日もなんとかなる賞","お疲れ最優秀賞","ナイスファイト賞","えらすぎ殿堂入り賞","今日も勝った賞","休んでヨシ賞"];
+
+const HONBUN_MAJIME = [
+ "あなたは「{x}」に日々ひたむきに取り組み、その努力と姿勢はまことに見事でした。よってここにその功績を讃え、本状を贈ります。",
+ "あなたは「{x}」をやり遂げるべく、たゆまぬ努力を重ねました。その歩みは大いに称賛に値します。よってこれを表彰します。",
+ "あなたは「{x}」において、誰に見られずとも着実に前へ進み続けました。その地道な積み重ねを心から讃えます。",
+ "あなたは「{x}」と真摯に向き合い、最後までやり抜きました。その粘り強さはまさに模範です。よって本状を贈り、表彰します。"
+];
+const HONBUN_YUMOR = [
+ "あなたは「{x}」を、なんやかんや言いつつもしっかりやり切りました。控えめに言って、えらい。よってここに盛大に表彰します。",
+ "あなたは「{x}」と日々格闘し、心が折れかけながらも今日まで生き延びました。その勇姿、あっぱれ。よって本状を贈ります。",
+ "あなたは「{x}」をがんばりました。もう十分すぎるほどがんばっています。よってここに『もっと自分を褒めてよし』と認定します。",
+ "あなたは「{x}」を見事こなしました。今日くらいは胸を張って、好きなものを食べてよろしい。よって本状を授与します。"
+];
+
+let lastExtra = 0;
+function pick(arr,n){ return arr[n % arr.length]; }
+
+function fmtDate(){
+  const d = new Date();
+  return d.getFullYear()+"年"+(d.getMonth()+1)+"月"+d.getDate()+"日";
+}
+
+function render(extra){
+  const nm = (document.getElementById('nm').value.trim() || "あなた");
+  const effort = (document.getElementById('effort').value.trim() || "毎日をがんばったこと");
+  const key = nm + "@" + effort + "@" + tone + "#" + extra;
+  const h = hash(key);
+  lastExtra = extra;
+
+  const shouArr = tone === "ユーモア" ? SHOU_YUMOR : SHOU_MAJIME;
+  const bodyArr = tone === "ユーモア" ? HONBUN_YUMOR : HONBUN_MAJIME;
+  const prize = pick(shouArr, hash(key+"_s"));
+  const body  = pick(bodyArr, hash(key+"_b")).replace("{x}", effort);
+
+  document.getElementById('cname').textContent = nm;
+  document.getElementById('cprize').textContent = "【 "+prize+" 】";
+  document.getElementById('cbody').textContent = body;
+  document.getElementById('cno').textContent = "No. "+(1000+hash(nm+effort)%9000)+"-"+(10+h%90);
+  document.getElementById('cdate').textContent = fmtDate();
+  document.getElementById('seal').textContent = tone === "ユーモア" ? "祝" : "賞";
+
+  document.getElementById('card').classList.remove('hidden');
+  document.getElementById('actions').classList.remove('hidden');
+  document.getElementById('savenote').classList.remove('hidden');
+}
+
+document.getElementById('go').onclick = ()=>{
+  if(!document.getElementById('nm').value.trim()){ alert("名前を入れてください"); return; }
+  if(!document.getElementById('effort').value.trim()){ alert("最近がんばったことを入れてください"); return; }
+  if(!tone){ alert("トーンを選んでください"); return; }
+  render(0);
+  document.getElementById('card').scrollIntoView({behavior:'smooth'});
+};
+document.getElementById('gacha').onclick = ()=> render(lastExtra+1);
+document.getElementById('reset').onclick = ()=>{
+  document.getElementById('card').classList.add('hidden');
+  document.getElementById('actions').classList.add('hidden');
+  document.getElementById('savenote').classList.add('hidden');
+  window.scrollTo({top:0,behavior:'smooth'});
+};
+</script>
+</body>
+</html>
