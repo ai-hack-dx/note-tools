@@ -1,589 +1,397 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>画像変換・圧縮ツール | AI Hack DX</title>
-  <meta name="description" content="PNG・JPG・WebPに変換してファイルサイズを比較・ダウンロード。ブラウザだけで完結、アップロード不要。">
-  <style>
-    :root {
-      --primary: #2563eb;
-      --primary-dark: #1d4ed8;
-      --bg: #f8fafc;
-      --card: #ffffff;
-      --border: #e2e8f0;
-      --text: #1e293b;
-      --muted: #64748b;
-      --green: #10b981;
-      --yellow: #f59e0b;
-      --red: #ef4444;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      padding: 24px 16px 60px;
-    }
-    .container { max-width: 860px; margin: 0 auto; }
-
-    /* ヘッダー */
-    .header {
-      text-align: center;
-      margin-bottom: 36px;
-    }
-    .header h1 {
-      font-size: 26px;
-      font-weight: 800;
-      color: #1e293b;
-      margin-bottom: 8px;
-    }
-    .header p { color: var(--muted); font-size: 14px; line-height: 1.6; }
-    .privacy-note {
-      display: inline-block;
-      margin-top: 10px;
-      background: #dcfce7;
-      color: #15803d;
-      font-size: 12px;
-      font-weight: 600;
-      padding: 4px 12px;
-      border-radius: 20px;
-    }
-
-    /* ドロップゾーン */
-    .drop-zone {
-      border: 2px dashed var(--primary);
-      border-radius: 18px;
-      padding: 56px 24px;
-      text-align: center;
-      background: rgba(37, 99, 235, 0.03);
-      cursor: pointer;
-      transition: all 0.2s;
-      margin-bottom: 28px;
-      position: relative;
-    }
-    .drop-zone:hover, .drop-zone.drag-over {
-      border-color: var(--primary-dark);
-      background: rgba(37, 99, 235, 0.08);
-      transform: translateY(-1px);
-    }
-    .drop-zone .icon { font-size: 52px; margin-bottom: 14px; }
-    .drop-zone h2 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
-    .drop-zone p { color: var(--muted); font-size: 13px; line-height: 1.6; }
-    .drop-zone input[type="file"] { display: none; }
-    .select-btn {
-      display: inline-block;
-      margin-top: 16px;
-      background: var(--primary);
-      color: white;
-      padding: 10px 28px;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      border: none;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    .select-btn:hover { background: var(--primary-dark); }
-
-    /* 結果エリア */
-    .result-area { display: none; }
-    .result-area.visible { display: block; }
-
-    /* カード共通 */
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 22px 24px;
-      margin-bottom: 20px;
-    }
-    .card h3 {
-      font-size: 15px;
-      font-weight: 700;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    /* 元画像情報 */
-    .original-card {
-      display: flex;
-      gap: 24px;
-      align-items: flex-start;
-    }
-    .preview-wrap {
-      flex-shrink: 0;
-      width: 160px;
-    }
-    .preview-img {
-      width: 160px;
-      height: 120px;
-      object-fit: contain;
-      border-radius: 10px;
-      background: #f1f5f9;
-      border: 1px solid var(--border);
-      display: block;
-    }
-    .orig-info-title {
-      font-size: 15px;
-      font-weight: 700;
-      margin-bottom: 12px;
-    }
-    .info-grid {
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 7px 20px;
-      font-size: 13px;
-    }
-    .info-label { color: var(--muted); }
-    .info-value { font-weight: 600; }
-
-    /* 品質スライダー */
-    .quality-row {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-    .quality-row label { font-size: 13px; font-weight: 600; white-space: nowrap; }
-    .quality-row input[type="range"] {
-      flex: 1;
-      accent-color: var(--primary);
-      height: 4px;
-    }
-    .quality-display {
-      font-size: 15px;
-      font-weight: 800;
-      color: var(--primary);
-      min-width: 44px;
-      text-align: right;
-    }
-    .quality-note {
-      font-size: 12px;
-      color: var(--muted);
-      margin-top: 8px;
-    }
-
-    /* フォーマット比較 */
-    .format-list { display: grid; gap: 10px; }
-    .format-item {
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px 18px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      transition: border-color 0.2s;
-    }
-    .format-item:hover { border-color: var(--primary); }
-    .format-badge {
-      background: #f1f5f9;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 4px 10px;
-      font-size: 13px;
-      font-weight: 800;
-      font-family: monospace;
-      min-width: 58px;
-      text-align: center;
-      letter-spacing: 0.5px;
-    }
-    .format-badge.png  { background: #dbeafe; border-color: #93c5fd; color: #1d4ed8; }
-    .format-badge.jpg  { background: #fef3c7; border-color: #fcd34d; color: #92400e; }
-    .format-badge.webp { background: #d1fae5; border-color: #6ee7b7; color: #065f46; }
-    .size-col { flex: 1; min-width: 0; }
-    .size-text { font-size: 16px; font-weight: 700; }
-    .size-sub  { font-size: 11px; color: var(--muted); margin-top: 2px; }
-    .format-note { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
-    .bar-wrap {
-      height: 5px;
-      background: #e2e8f0;
-      border-radius: 3px;
-      margin-top: 8px;
-      overflow: hidden;
-    }
-    .bar-fill {
-      height: 5px;
-      border-radius: 3px;
-      transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
-    }
-    .ratio-badge {
-      font-size: 12px;
-      font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 20px;
-      white-space: nowrap;
-    }
-    .ratio-good { background: #dcfce7; color: #15803d; }
-    .ratio-mid  { background: #fef3c7; color: #92400e; }
-    .ratio-same { background: #f1f5f9; color: #64748b; }
-    .ratio-big  { background: #fee2e2; color: #991b1b; }
-    .dl-btn {
-      background: var(--primary);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 8px 16px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: background 0.2s;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-    .dl-btn:hover { background: var(--primary-dark); }
-
-    /* 元ファイルダウンロード */
-    .orig-dl-row {
-      margin-top: 14px;
-      padding-top: 14px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-    .orig-dl-label { font-size: 13px; color: var(--muted); }
-
-    /* ローディング */
-    .loading {
-      text-align: center;
-      padding: 24px 0;
-      color: var(--muted);
-      font-size: 14px;
-    }
-    .spinner {
-      display: inline-block;
-      width: 20px;
-      height: 20px;
-      border: 3px solid #e2e8f0;
-      border-top-color: var(--primary);
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      margin-right: 8px;
-      vertical-align: middle;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* リセット */
-    .reset-btn {
-      display: block;
-      margin: 8px auto 0;
-      background: transparent;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px 28px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      color: var(--muted);
-      transition: all 0.2s;
-    }
-    .reset-btn:hover {
-      border-color: var(--primary);
-      color: var(--primary);
-      background: rgba(37,99,235,0.04);
-    }
-
-    /* フッター */
-    .footer {
-      text-align: center;
-      margin-top: 48px;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.8;
-    }
-    .footer a { color: var(--primary); text-decoration: none; }
-    .footer a:hover { text-decoration: underline; }
-
-    @media (max-width: 560px) {
-      .original-card { flex-direction: column; }
-      .preview-wrap { width: 100%; }
-      .preview-img { width: 100%; height: 180px; }
-      .format-item { flex-wrap: wrap; }
-      .size-col { min-width: calc(100% - 80px); }
-      .dl-btn { width: 100%; text-align: center; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>画像まるごと変換・圧縮ツール｜HEIC→JPG・リサイズ・EXIF削除（アップロード不要）</title>
+<meta name="description" content="iPhoneのHEIC写真をJPGに変換、画像の圧縮・リサイズ・位置情報(EXIF)削除がブラウザだけで完結。ファイルは外部に一切送信されません。無料・登録不要。">
+<style>
+  :root{
+    --bg:#0f172a; --card:#ffffff; --ink:#0f172a; --sub:#64748b;
+    --line:#e2e8f0; --brand:#2563eb; --brand-d:#1d4ed8; --ok:#059669;
+    --soft:#f1f5f9; --warn:#b45309;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",Meiryo,sans-serif;
+    color:var(--ink); background:linear-gradient(180deg,#eef2ff 0%,#f8fafc 280px,#f8fafc 100%);
+    line-height:1.7; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:780px; margin:0 auto; padding:28px 18px 80px;}
+  header.hd{text-align:center; padding:18px 0 6px;}
+  .hd h1{font-size:25px; line-height:1.35; margin:6px 0 8px; letter-spacing:.2px;}
+  .hd p{color:var(--sub); margin:0; font-size:14px;}
+  .badge{
+    display:inline-flex; align-items:center; gap:7px; background:#ecfdf5; color:var(--ok);
+    border:1px solid #a7f3d0; padding:6px 14px; border-radius:999px; font-size:13px; font-weight:700;
+    margin-bottom:6px;
+  }
+  .badge svg{width:15px;height:15px}
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding:20px; margin-top:18px; box-shadow:0 6px 24px rgba(15,23,42,.05);
+  }
+  .drop{
+    border:2px dashed #c7d2fe; border-radius:14px; background:#f5f8ff; padding:34px 18px;
+    text-align:center; cursor:pointer; transition:.18s; color:var(--sub);
+  }
+  .drop.drag{background:#e0e7ff; border-color:var(--brand);}
+  .drop strong{display:block; color:var(--ink); font-size:16px; margin-bottom:4px;}
+  .drop .sub{font-size:13px;}
+  .drop .ic{font-size:30px; margin-bottom:8px;}
+  #file{display:none}
+  .opt-title{font-size:13px; font-weight:700; color:var(--sub); margin:18px 0 8px; letter-spacing:.4px;}
+  .seg{display:flex; gap:8px; flex-wrap:wrap;}
+  .seg label{
+    flex:1; min-width:90px; text-align:center; border:1.5px solid var(--line); border-radius:10px;
+    padding:9px 6px; font-size:14px; font-weight:600; cursor:pointer; background:#fff; transition:.15s; color:var(--sub);
+  }
+  .seg input{display:none}
+  .seg label:has(input:checked){border-color:var(--brand); background:#eff6ff; color:var(--brand);}
+  .row{display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .row .lab{font-size:14px; font-weight:600; min-width:84px;}
+  input[type=range]{flex:1; accent-color:var(--brand); height:4px;}
+  .val{font-variant-numeric:tabular-nums; font-weight:700; color:var(--brand); min-width:46px; text-align:right;}
+  select,input[type=number]{
+    border:1.5px solid var(--line); border-radius:10px; padding:8px 10px; font-size:14px; background:#fff; color:var(--ink);
+  }
+  .muted{color:var(--sub); font-size:12.5px;}
+  .btn{
+    display:block; width:100%; border:0; border-radius:12px; padding:15px; font-size:16px; font-weight:800;
+    color:#fff; background:linear-gradient(180deg,var(--brand),var(--brand-d)); cursor:pointer; margin-top:18px;
+    box-shadow:0 6px 16px rgba(37,99,235,.28); transition:.15s; letter-spacing:.3px;
+  }
+  .btn:hover{filter:brightness(1.05)}
+  .btn:disabled{opacity:.5; cursor:not-allowed; box-shadow:none;}
+  .btn.sec{background:#fff; color:var(--brand); border:1.5px solid var(--brand); box-shadow:none;}
+  .results{margin-top:6px}
+  .res-head{display:flex; justify-content:space-between; align-items:center; margin:22px 0 10px;}
+  .res-head h2{font-size:16px; margin:0;}
+  .item{
+    display:flex; align-items:center; gap:13px; border:1px solid var(--line); border-radius:12px;
+    padding:11px 12px; margin-bottom:10px; background:#fff;
+  }
+  .item img{width:54px; height:54px; object-fit:cover; border-radius:8px; background:var(--soft); flex:none;}
+  .item .meta{flex:1; min-width:0;}
+  .item .nm{font-size:13.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .item .sz{font-size:12.5px; color:var(--sub); margin-top:2px;}
+  .item .sz b{color:var(--ok);}
+  .item .dl{
+    flex:none; border:1.5px solid var(--brand); color:var(--brand); background:#fff; border-radius:9px;
+    padding:8px 12px; font-size:13px; font-weight:700; cursor:pointer; text-decoration:none;
+  }
+  .item.err{border-color:#fecaca; background:#fef2f2;}
+  .item.err .sz{color:var(--warn);}
+  .chip{display:inline-block; font-size:11px; font-weight:700; padding:2px 7px; border-radius:6px; background:#eff6ff; color:var(--brand); margin-left:6px;}
+  .privacy{
+    margin-top:22px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px; padding:14px 16px;
+    font-size:13px; color:#166534;
+  }
+  .privacy b{color:#15803d;}
+  footer{text-align:center; margin-top:28px; color:var(--sub); font-size:12.5px;}
+  footer a{color:var(--brand); text-decoration:none;}
+  .hidden{display:none !important}
+  .spin{display:inline-block; width:15px;height:15px; border:2px solid #fff; border-top-color:transparent; border-radius:50%; animation:sp .7s linear infinite; vertical-align:-2px; margin-right:7px;}
+  @keyframes sp{to{transform:rotate(360deg)}}
+</style>
 </head>
 <body>
-  <div class="container">
+<div class="wrap">
+  <header class="hd">
+    <span class="badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      アップロード不要・ブラウザ内で完結
+    </span>
+    <h1>画像まるごと変換・圧縮ツール</h1>
+    <p>HEIC→JPG変換／圧縮／リサイズ／位置情報(EXIF)削除を、これ1つで。<br>ファイルは<b>あなたの端末から外に出ません</b>。</p>
+  </header>
 
-    <div class="header">
-      <h1>🖼️ 画像変換・圧縮ツール</h1>
-      <p>PNG・JPG・WebP に変換してファイルサイズを比較。<br>すべてブラウザ内で完結します。</p>
-      <span class="privacy-note">🔒 画像はサーバーに送信されません</span>
+  <div class="card">
+    <div class="drop" id="drop">
+      <div class="ic">🖼️</div>
+      <strong>画像をドラッグ＆ドロップ</strong>
+      <span class="sub">またはタップして選択（HEIC / JPG / PNG / WebP・複数まとめてOK）</span>
     </div>
+    <input type="file" id="file" accept="image/*,.heic,.heif" multiple>
 
-    <!-- ドロップゾーン -->
-    <div class="drop-zone" id="dropZone">
-      <div class="icon">📂</div>
-      <h2>画像をここにドラッグ＆ドロップ</h2>
-      <p>PNG / JPG / WebP / GIF / BMP 対応<br>最大サイズの制限なし</p>
-      <button class="select-btn" onclick="document.getElementById('fileInput').click()">
-        ファイルを選択
-      </button>
-      <input type="file" id="fileInput" accept="image/*">
-    </div>
-
-    <!-- 結果エリア -->
-    <div class="result-area" id="resultArea">
-
-      <!-- 元画像情報 -->
-      <div class="card">
-        <div class="original-card">
-          <div class="preview-wrap">
-            <img class="preview-img" id="previewImg" alt="プレビュー">
-          </div>
-          <div style="flex:1;">
-            <div class="orig-info-title">元の画像</div>
-            <div class="info-grid">
-              <span class="info-label">ファイル名</span>
-              <span class="info-value" id="origName">—</span>
-              <span class="info-label">形式</span>
-              <span class="info-value" id="origFormat">—</span>
-              <span class="info-label">サイズ</span>
-              <span class="info-value" id="origSize">—</span>
-              <span class="info-label">解像度</span>
-              <span class="info-value" id="origRes">—</span>
-            </div>
-          </div>
-        </div>
+    <div id="settings" class="hidden">
+      <div class="opt-title">出力する形式</div>
+      <div class="seg" id="fmt">
+        <label><input type="radio" name="fmt" value="image/jpeg" checked><span>JPEG<br><small class="muted">写真向き・軽い</small></span></label>
+        <label><input type="radio" name="fmt" value="image/png"><span>PNG<br><small class="muted">透過・きれい</small></span></label>
+        <label><input type="radio" name="fmt" value="image/webp"><span>WebP<br><small class="muted">最も軽い</small></span></label>
       </div>
 
-      <!-- 品質設定 -->
-      <div class="card">
-        <h3>⚙️ 変換設定</h3>
-        <div class="quality-row">
-          <label for="qualitySlider">JPG / WebP 品質</label>
-          <input type="range" id="qualitySlider" min="10" max="100" value="85" step="5">
-          <span class="quality-display" id="qualityValue">85%</span>
-        </div>
-        <p class="quality-note">品質を下げるほどファイルサイズが小さくなります。80%前後が画質とサイズのバランスが良い設定です。PNG は可逆圧縮のためこの設定は適用されません。</p>
+      <div class="opt-title">画質（ファイルの軽さ）</div>
+      <div class="row" id="qrow">
+        <span class="lab">画質</span>
+        <input type="range" id="quality" min="40" max="100" value="82" step="1">
+        <span class="val" id="qval">82%</span>
+      </div>
+      <p class="muted" id="qhint" style="margin:2px 0 0">数字を下げるほどファイルが軽くなります（推奨80前後）。</p>
+
+      <div class="opt-title">サイズ（長辺をそろえる）</div>
+      <div class="row">
+        <span class="lab">長辺</span>
+        <select id="resize">
+          <option value="0">変更しない（元のまま）</option>
+          <option value="3000">3000px（大きめ印刷）</option>
+          <option value="1920">1920px（PC・SNS高画質）</option>
+          <option value="1280">1280px（ブログ・メール）</option>
+          <option value="800">800px（小さく軽量）</option>
+          <option value="custom">自分で指定…</option>
+        </select>
+        <input type="number" id="resizeCustom" class="hidden" min="100" max="8000" value="1600" style="width:96px">
+        <span class="muted" id="resizePx"></span>
       </div>
 
-      <!-- サイズ比較 -->
-      <div class="card">
-        <h3>📊 形式別ファイルサイズ比較</h3>
-        <div class="format-list" id="formatList">
-          <div class="loading"><span class="spinner"></span>変換中...</div>
-        </div>
-        <div class="orig-dl-row" id="origDlRow" style="display:none;">
-          <span class="orig-dl-label">元のファイルをそのまま保存</span>
-          <button class="dl-btn" id="origDlBtn" style="background:#64748b;">元ファイルを保存</button>
-        </div>
-      </div>
-
-      <button class="reset-btn" id="resetBtn">↩ 別の画像で試す</button>
+      <button class="btn" id="run">変換する</button>
     </div>
-
-    <div class="footer">
-      このツールの作り方を <a href="https://note.com/ai_hack_dx" target="_blank">「今日から使えるAI実践帳」</a> で解説しています<br>
-      Claude Code で作成 | <a href="https://github.com/ai-hack-dx/note-tools" target="_blank">GitHub</a>
-    </div>
-
   </div>
 
-  <canvas id="cvs" style="display:none;"></canvas>
+  <div class="results card hidden" id="resultCard">
+    <div class="res-head">
+      <h2>変換結果 <span class="chip" id="count">0件</span></h2>
+      <button class="btn sec" id="zip" style="width:auto; margin:0; padding:9px 14px; font-size:14px;">まとめてZIP保存</button>
+    </div>
+    <div id="list"></div>
+  </div>
 
-  <script>
-    const dropZone  = document.getElementById('dropZone');
-    const fileInput = document.getElementById('fileInput');
-    const resultArea= document.getElementById('resultArea');
-    const previewImg= document.getElementById('previewImg');
-    const formatList= document.getElementById('formatList');
-    const qualSlider= document.getElementById('qualitySlider');
-    const qualValue = document.getElementById('qualityValue');
-    const resetBtn  = document.getElementById('resetBtn');
-    const origDlRow = document.getElementById('origDlRow');
-    const origDlBtn = document.getElementById('origDlBtn');
-    const cvs       = document.getElementById('cvs');
-    const ctx       = cvs.getContext('2d');
+  <div class="privacy">
+    🔒 <b>このツールの仕組み</b>：選んだ画像はサーバーに送らず、すべてあなたのブラウザの中だけで変換しています。通信を切っても動きます。変換のときに画像を作り直すので、<b>位置情報などの撮影メタデータ(EXIF)は自動で消えます</b>。SNSに上げる前の処理にも安心です。
+  </div>
 
-    let currentFile   = null;
-    let currentImage  = null;
-    let debounceTimer = null;
+  <footer>
+    Claude Code で作った無料ツールです ・ <a href="https://note.com/ai_hack_dx" target="_blank" rel="noopener">作り方の記事はこちら</a><br>
+    <span class="muted">HEIC変換に heic2any / ZIPに JSZip を使用（読み込み後はオフラインでも動作）</span>
+  </footer>
+</div>
 
-    // ドロップ操作
-    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-    dropZone.addEventListener('drop', e => {
-      e.preventDefault();
-      dropZone.classList.remove('drag-over');
-      handleFile(e.dataTransfer.files[0]);
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  var drop = document.getElementById('drop');
+  var fileInput = document.getElementById('file');
+  var settings = document.getElementById('settings');
+  var quality = document.getElementById('quality');
+  var qval = document.getElementById('qval');
+  var qrow = document.getElementById('qrow');
+  var qhint = document.getElementById('qhint');
+  var resize = document.getElementById('resize');
+  var resizeCustom = document.getElementById('resizeCustom');
+  var resizePx = document.getElementById('resizePx');
+  var runBtn = document.getElementById('run');
+  var resultCard = document.getElementById('resultCard');
+  var listEl = document.getElementById('list');
+  var countEl = document.getElementById('count');
+  var zipBtn = document.getElementById('zip');
+
+  var queue = [];      // selected File objects
+  var outputs = [];    // {name, blob} for ZIP
+
+  function fmtSize(n){
+    if(n < 1024) return n + ' B';
+    if(n < 1024*1024) return (n/1024).toFixed(1) + ' KB';
+    return (n/1024/1024).toFixed(2) + ' MB';
+  }
+  function selectedFormat(){
+    var el = document.querySelector('input[name=fmt]:checked');
+    return el ? el.value : 'image/jpeg';
+  }
+  function extFor(mime){
+    return mime==='image/png' ? 'png' : (mime==='image/webp' ? 'webp' : 'jpg');
+  }
+  function baseName(name){
+    var i = name.lastIndexOf('.');
+    return i>0 ? name.slice(0,i) : name;
+  }
+  function isHeic(file){
+    var t = (file.type||'').toLowerCase();
+    var n = (file.name||'').toLowerCase();
+    return t.indexOf('heic')>-1 || t.indexOf('heif')>-1 || /\.(heic|heif)$/.test(n);
+  }
+
+  // ---- UI wiring ----
+  quality.addEventListener('input', function(){ qval.textContent = quality.value + '%'; });
+  function syncQualityVisibility(){
+    var png = selectedFormat()==='image/png';
+    qrow.style.display = png ? 'none' : '';
+    qhint.style.display = png ? 'none' : '';
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('input[name=fmt]'), function(r){
+    r.addEventListener('change', syncQualityVisibility);
+  });
+  resize.addEventListener('change', function(){
+    var custom = resize.value==='custom';
+    resizeCustom.classList.toggle('hidden', !custom);
+    updateResizeHint();
+  });
+  resizeCustom.addEventListener('input', updateResizeHint);
+  function targetEdge(){
+    if(resize.value==='custom') return parseInt(resizeCustom.value,10)||0;
+    return parseInt(resize.value,10)||0;
+  }
+  function updateResizeHint(){
+    var e = targetEdge();
+    resizePx.textContent = e ? ('長辺 ' + e + 'px に縮小') : '';
+  }
+
+  drop.addEventListener('click', function(){ fileInput.click(); });
+  ['dragenter','dragover'].forEach(function(ev){
+    drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.add('drag'); });
+  });
+  ['dragleave','drop'].forEach(function(ev){
+    drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.remove('drag'); });
+  });
+  drop.addEventListener('drop', function(e){
+    if(e.dataTransfer && e.dataTransfer.files) addFiles(e.dataTransfer.files);
+  });
+  fileInput.addEventListener('change', function(){ addFiles(fileInput.files); });
+
+  function addFiles(fl){
+    var arr = Array.prototype.slice.call(fl).filter(function(f){
+      return f.type.indexOf('image')===0 || isHeic(f);
     });
-    fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+    if(!arr.length) return;
+    queue = arr;
+    settings.classList.remove('hidden');
+    drop.querySelector('strong').textContent = arr.length + '枚を選択中（タップで選び直し）';
+    syncQualityVisibility();
+    updateResizeHint();
+  }
 
-    // 品質スライダー（デバウンス：動かし終わってから350ms後に再計算）
-    qualSlider.addEventListener('input', () => {
-      qualValue.textContent = qualSlider.value + '%';
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
-        if (currentImage) renderFormats();
-      }, 350);
+  // ---- core conversion ----
+  function loadImage(blob){
+    return new Promise(function(resolve, reject){
+      var url = URL.createObjectURL(blob);
+      var img = new Image();
+      img.onload = function(){ resolve({img:img, url:url}); };
+      img.onerror = function(){ URL.revokeObjectURL(url); reject(new Error('画像を読み込めませんでした')); };
+      img.src = url;
     });
+  }
 
-    // リセット
-    resetBtn.addEventListener('click', () => {
-      currentFile = currentImage = null;
-      fileInput.value = '';
-      resultArea.classList.remove('visible');
-      dropZone.style.display = '';
+  function convertOne(file){
+    var mime = selectedFormat();
+    var q = (mime==='image/png') ? undefined : (parseInt(quality.value,10)/100);
+    var edge = targetEdge();
+
+    var pre = Promise.resolve(file);
+    if(isHeic(file)){
+      if(typeof heic2any !== 'function'){
+        return Promise.reject(new Error('HEIC変換ライブラリを読み込めませんでした（通信を確認してください）'));
+      }
+      pre = heic2any({ blob:file, toType:'image/png' }).then(function(out){
+        return Array.isArray(out) ? out[0] : out;
+      });
+    }
+
+    return pre.then(loadImage).then(function(r){
+      var w = r.img.naturalWidth, h = r.img.naturalHeight;
+      var scale = 1;
+      if(edge && Math.max(w,h) > edge) scale = edge / Math.max(w,h);
+      var tw = Math.max(1, Math.round(w*scale)), th = Math.max(1, Math.round(h*scale));
+      var canvas = document.createElement('canvas');
+      canvas.width = tw; canvas.height = th;
+      var ctx = canvas.getContext('2d');
+      if(mime==='image/jpeg'){ ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,tw,th); }
+      ctx.drawImage(r.img, 0, 0, tw, th);
+      URL.revokeObjectURL(r.url);
+      return new Promise(function(resolve, reject){
+        canvas.toBlob(function(blob){
+          if(!blob){ reject(new Error('変換に失敗しました')); return; }
+          resolve({ blob:blob, w:tw, h:th });
+        }, mime, q);
+      });
     });
+  }
 
-    // ユーティリティ
-    function fmtBytes(b) {
-      if (b < 1024)       return b + ' B';
-      if (b < 1048576)    return (b / 1024).toFixed(1) + ' KB';
-      return (b / 1048576).toFixed(2) + ' MB';
+  function addResultRow(file, result, err){
+    var ext = extFor(selectedFormat());
+    var div = document.createElement('div');
+    div.className = 'item' + (err ? ' err' : '');
+    var thumb = document.createElement('img');
+    var meta = document.createElement('div'); meta.className = 'meta';
+    var nm = document.createElement('div'); nm.className = 'nm';
+    var sz = document.createElement('div'); sz.className = 'sz';
+
+    if(err){
+      thumb.alt = ''; thumb.style.visibility = 'hidden';
+      nm.textContent = file.name;
+      sz.textContent = '⚠ ' + err.message;
+      div.appendChild(thumb); meta.appendChild(nm); meta.appendChild(sz); div.appendChild(meta);
+    } else {
+      var url = URL.createObjectURL(result.blob);
+      thumb.src = url;
+      nm.textContent = baseName(file.name) + '.' + ext;
+      var saved = file.size>0 ? Math.max(0, Math.round((1 - result.blob.size/file.size)*100)) : 0;
+      sz.innerHTML = fmtSize(file.size) + ' → <b>' + fmtSize(result.blob.size) + '</b> '
+                   + (file.size>0 && result.blob.size<file.size ? '（' + saved + '%軽量化）' : '')
+                   + ' ・ ' + result.w + '×' + result.h + 'px';
+      var dl = document.createElement('a');
+      dl.className = 'dl'; dl.textContent = '保存'; dl.href = url;
+      dl.download = baseName(file.name) + '.' + ext;
+      meta.appendChild(nm); meta.appendChild(sz);
+      div.appendChild(thumb); div.appendChild(meta); div.appendChild(dl);
+      outputs.push({ name: baseName(file.name) + '.' + ext, blob: result.blob });
     }
+    listEl.appendChild(div);
+  }
 
-    function mimeLabel(mime) {
-      const m = { 'image/png':'PNG','image/jpeg':'JPG','image/webp':'WebP',
-                  'image/gif':'GIF','image/bmp':'BMP','image/svg+xml':'SVG' };
-      return m[mime] || mime.replace('image/','').toUpperCase();
-    }
+  runBtn.addEventListener('click', function(){
+    if(!queue.length) return;
+    outputs = [];
+    listEl.innerHTML = '';
+    resultCard.classList.remove('hidden');
+    runBtn.disabled = true;
+    var original = runBtn.innerHTML;
+    var done = 0, total = queue.length;
+    countEl.textContent = '処理中…';
 
-    function blobFromCanvas(mime, quality) {
-      return new Promise(res => cvs.toBlob(b => res(b), mime, quality));
-    }
-
-    // ファイル読み込み
-    function handleFile(file) {
-      if (!file || !file.type.startsWith('image/')) return;
-      currentFile = file;
-      const reader = new FileReader();
-      reader.onload = e => {
-        const img = new Image();
-        img.onload = () => {
-          currentImage = img;
-          document.getElementById('origName').textContent   = file.name;
-          document.getElementById('origFormat').textContent = mimeLabel(file.type);
-          document.getElementById('origSize').textContent   = fmtBytes(file.size);
-          document.getElementById('origRes').textContent    = `${img.naturalWidth} × ${img.naturalHeight} px`;
-          previewImg.src = e.target.result;
-          dropZone.style.display = 'none';
-          resultArea.classList.add('visible');
-          renderFormats();
-        };
-        img.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
-
-    // フォーマット比較を描画
-    async function renderFormats() {
-      formatList.innerHTML = '<div class="loading"><span class="spinner"></span>変換中...</div>';
-      origDlRow.style.display = 'none';
-
-      const img = currentImage;
-      cvs.width  = img.naturalWidth;
-      cvs.height = img.naturalHeight;
-      ctx.clearRect(0, 0, cvs.width, cvs.height);
-      ctx.drawImage(img, 0, 0);
-
-      const q = parseFloat(qualSlider.value) / 100;
-      const origSize = currentFile.size;
-
-      const formats = [
-        { id: 'png',  label: 'PNG',  mime: 'image/png',  quality: null, ext: 'png',
-          note: '画質劣化なし（可逆圧縮）。透明度（透過）対応。ロゴ・図・スクリーンショットに最適。写真はファイルサイズが大きくなりがち。' },
-        { id: 'jpg',  label: 'JPG',  mime: 'image/jpeg', quality: q,    ext: 'jpg',
-          note: '写真の保存に最適。品質を下げるほど細部がぼやけたりノイズが出るが、大幅なサイズ削減が可能。透明度は非対応。' },
-        { id: 'webp', label: 'WebP', mime: 'image/webp', quality: q,    ext: 'webp',
-          note: 'Googleが開発した次世代フォーマット。JPGより高圧縮・高画質で透明度にも対応。Web掲載用の第一選択肢。古い環境では開けない場合あり。' },
-      ];
-
-      const results = await Promise.all(formats.map(async f => {
-        const blob = await blobFromCanvas(f.mime, f.quality ?? undefined);
-        return { ...f, blob, size: blob ? blob.size : null };
-      }));
-
-      const maxSize = Math.max(origSize, ...results.filter(r => r.size).map(r => r.size));
-
-      formatList.innerHTML = '';
-
-      results.forEach(r => {
-        if (!r.size) return;
-
-        const isOrig   = r.mime === currentFile.type;
-        // 同じ形式のときはCanvas再変換サイズではなく元ファイルサイズを使う
-        const dispSize = isOrig ? origSize : r.size;
-        const diff     = dispSize - origSize;
-        const pct      = Math.round((1 - dispSize / origSize) * 100);
-        const barW     = Math.round((dispSize / maxSize) * 100);
-
-        let ratioClass, ratioText;
-        if (isOrig)          { ratioClass = 'ratio-same'; ratioText = '元と同じ'; }
-        else if (pct > 0)    { ratioClass = 'ratio-good'; ratioText = `↓${pct}% 削減`; }
-        else if (pct === 0)  { ratioClass = 'ratio-same'; ratioText = '変化なし'; }
-        else if (pct > -20)  { ratioClass = 'ratio-mid';  ratioText = `↑${Math.abs(pct)}% 増加`; }
-        else                 { ratioClass = 'ratio-big';  ratioText = `↑${Math.abs(pct)}% 増加`; }
-
-        let barColor = '#94a3b8';
-        if (isOrig)          barColor = '#94a3b8';
-        else if (pct >= 20)  barColor = '#10b981';
-        else if (pct > 0)    barColor = '#3b82f6';
-        else if (pct < -15)  barColor = '#f59e0b';
-
-        const subText = isOrig
-          ? '(元ファイルと同じ形式)'
-          : (diff < 0 ? `元より ${fmtBytes(Math.abs(diff))} 小さい` : `元より ${fmtBytes(Math.abs(diff))} 大きい`);
-
-        const item = document.createElement('div');
-        item.className = 'format-item';
-        item.innerHTML = `
-          <span class="format-badge ${r.id}">${r.label}</span>
-          <div class="size-col">
-            <div class="size-text">${fmtBytes(dispSize)}</div>
-            <div class="size-sub">${subText}</div>
-            <div class="bar-wrap">
-              <div class="bar-fill" style="width:${barW}%;background:${barColor};"></div>
-            </div>
-            <div class="format-note">${r.note}</div>
-          </div>
-          <span class="ratio-badge ${ratioClass}">${ratioText}</span>
-          <button class="dl-btn" data-mime="${r.mime}" data-ext="${r.ext}">DL</button>
-        `;
-        formatList.appendChild(item);
-
-        item.querySelector('.dl-btn').addEventListener('click', async () => {
-          // 同じ形式のときは元ファイルをそのまま使う
-          if (isOrig) {
-            const url = URL.createObjectURL(currentFile);
-            const a   = document.createElement('a');
-            a.href     = url;
-            a.download = currentFile.name;
-            a.click();
-            URL.revokeObjectURL(url);
-            return;
-          }
-          const q2   = parseFloat(qualSlider.value) / 100;
-          const blob = await blobFromCanvas(r.mime, r.mime === 'image/png' ? undefined : q2);
-          if (!blob) return;
-          const url  = URL.createObjectURL(blob);
-          const a    = document.createElement('a');
-          const base = currentFile.name.replace(/\.[^.]+$/, '');
-          a.href     = url;
-          a.download = `${base}.${r.ext}`;
-          a.click();
-          URL.revokeObjectURL(url);
+    var chain = Promise.resolve();
+    queue.forEach(function(file){
+      chain = chain.then(function(){
+        runBtn.innerHTML = '<span class="spin"></span>変換中… ' + (done+1) + '/' + total;
+        return convertOne(file).then(function(result){
+          addResultRow(file, result, null);
+        }).catch(function(e){
+          addResultRow(file, null, e);
+        }).then(function(){
+          done++;
         });
       });
+    });
+    chain.then(function(){
+      runBtn.disabled = false;
+      runBtn.innerHTML = original;
+      countEl.textContent = total + '件';
+      zipBtn.style.display = outputs.length>1 ? '' : 'none';
+      resultCard.scrollIntoView({behavior:'smooth', block:'start'});
+    });
+  });
 
-      // 元ファイルダウンロード
-      origDlRow.style.display = 'flex';
-      origDlBtn.onclick = () => {
-        const url = URL.createObjectURL(currentFile);
-        const a   = document.createElement('a');
-        a.href     = url;
-        a.download = currentFile.name;
-        a.click();
-        URL.revokeObjectURL(url);
-      };
-    }
-  </script>
+  zipBtn.addEventListener('click', function(){
+    if(!outputs.length || typeof JSZip!=='function') return;
+    var zip = new JSZip();
+    var used = {};
+    outputs.forEach(function(o, i){
+      var nm = o.name;
+      if(used[nm]){ nm = baseName(o.name) + '_' + (i+1) + '.' + extFor(selectedFormat()); }
+      used[nm] = true;
+      zip.file(nm, o.blob);
+    });
+    zipBtn.textContent = '作成中…'; zipBtn.disabled = true;
+    zip.generateAsync({type:'blob'}).then(function(blob){
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'converted-images.zip';
+      document.body.appendChild(a); a.click(); a.remove();
+      zipBtn.textContent = 'まとめてZIP保存'; zipBtn.disabled = false;
+    });
+  });
+})();
+</script>
 </body>
 </html>
