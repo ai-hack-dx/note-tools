@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>コンテンツ弱点分析ツール｜YouTube・note・Xの伸びる/伸びない傾向を自動診断（アップロード不要の無料ツール）</title>
+<meta name="description" content="YouTube・note・XのCSVを読み込むだけで、当たり外れの偏り・強い曜日・効くタイトルの傾向・伸び悩みの原因を自動分析。すべてブラウザ内で処理しデータを外部に送信しません。無料・登録不要。">
+<style>
+  :root{
+    --bg:#0f172a; --card:#ffffff; --ink:#0f172a; --sub:#64748b;
+    --line:#e2e8f0; --brand:#2563eb; --brand-d:#1d4ed8; --ok:#059669;
+    --soft:#f1f5f9; --warn:#b45309; --danger:#dc2626; --good:#059669;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",Meiryo,sans-serif;
+    color:var(--ink);background:linear-gradient(180deg,#eef2ff 0%,#f8fafc 280px,#f8fafc 100%);line-height:1.7;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:880px;margin:0 auto;padding:28px 18px 80px;}
+  header.hd{text-align:center;padding:18px 0 6px;}
+  .hd h1{font-size:23px;line-height:1.4;margin:8px 0 8px;}
+  .hd p{color:var(--sub);margin:0;font-size:14px;}
+  .badge{display:inline-flex;align-items:center;gap:7px;background:#ecfdf5;color:var(--ok);border:1px solid #a7f3d0;padding:6px 14px;border-radius:999px;font-size:13px;font-weight:700;margin-bottom:6px;}
+  .badge svg{width:15px;height:15px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;margin-top:18px;box-shadow:0 6px 24px rgba(15,23,42,.05);}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+  .chip{border:1px solid var(--line);background:var(--soft);color:var(--sub);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;transition:.15s;}
+  .chip.active{background:var(--brand);color:#fff;border-color:var(--brand);}
+  .drop{border:2px dashed #c7d2fe;border-radius:14px;background:#f5f8ff;padding:26px 18px;text-align:center;cursor:pointer;transition:.18s;color:var(--sub);}
+  .drop.drag{background:#e0e7ff;border-color:var(--brand);}
+  .drop strong{display:block;color:var(--ink);font-size:16px;margin-bottom:4px;}
+  .drop .sub{font-size:12.5px;}
+  .drop .ic{font-size:30px;margin-bottom:4px;}
+  .or{text-align:center;color:#94a3b8;font-size:12px;margin:10px 0;}
+  textarea#paste{width:100%;min-height:96px;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:13px;font-family:ui-monospace,Menlo,Consolas,monospace;resize:vertical;}
+  .row{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;}
+  .btn{border:0;border-radius:10px;padding:11px 18px;font-size:14px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:.15s;}
+  .btn.primary{background:var(--brand);color:#fff;}
+  .btn.primary:hover{background:var(--brand-d);}
+  .btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line);}
+  .btn.ghost:hover{background:var(--soft);}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+  .spacer{flex:1}
+  .map{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:14px;}
+  .map label{font-size:12px;color:var(--sub);font-weight:700;display:block;margin-bottom:4px;}
+  .map select,.lbl input{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:13px;background:#fff;}
+  .hide{display:none}
+  .hint{font-size:12.5px;color:var(--sub);margin-top:12px;background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:11px 13px;}
+  .hint b{color:var(--ink)}
+
+  /* results */
+  .reportwrap{text-align:center;}
+  #reportCard{max-width:100%;height:auto;border-radius:12px;box-shadow:0 6px 20px rgba(15,23,42,.12);}
+  h2.sec{font-size:17px;margin:26px 0 10px;display:flex;align-items:center;gap:8px;}
+  h2.sec::before{content:"";width:6px;height:18px;background:var(--brand);border-radius:3px;display:inline-block;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  @media(max-width:560px){.grid2{grid-template-columns:1fr;}}
+  .stat{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:12px 14px;}
+  .stat .k{font-size:12px;color:var(--sub);}
+  .stat .v{font-size:20px;font-weight:800;}
+  .bars{margin-top:6px;}
+  .bars .barrow{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:13px;}
+  .bars .blab{width:78px;flex:none;color:var(--sub);text-align:right;}
+  .bars .btrack{flex:1;background:#eef2f7;border-radius:6px;overflow:hidden;height:20px;position:relative;}
+  .bars .bfill{height:100%;background:var(--brand);border-radius:6px;}
+  .bars .bval{width:70px;flex:none;font-weight:700;font-size:12px;}
+  .bars .barrow.best .bfill{background:var(--good);}
+  .bars .barrow.worst .bfill{background:var(--danger);}
+  ol.rank,ul.kw{margin:6px 0;padding-left:20px;font-size:13.5px;}
+  ol.rank li,ul.kw li{margin:4px 0;}
+  .rank .m{color:var(--brand);font-weight:800;}
+  .bad{color:var(--danger);font-weight:800;}
+  .summary{background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:14px 16px;}
+  .summary ul{margin:6px 0;padding-left:20px;}
+  .summary li{margin:6px 0;font-size:14px;}
+  .pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;justify-content:center;}
+  .pill{font-size:12px;color:var(--sub);background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 12px;display:inline-flex;gap:6px;align-items:center;}
+  .pill svg{width:13px;height:13px}
+  footer{margin-top:30px;text-align:center;font-size:13px;color:var(--sub);}
+  footer a{color:var(--brand);text-decoration:none;}
+  footer .muted{font-size:12px;color:#94a3b8;}
+  .err{color:var(--danger);font-size:13px;margin-top:8px;font-weight:700;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hd">
+    <span class="badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>
+      データはこの端末の中だけで分析（アップロードなし）
+    </span>
+    <h1>コンテンツ弱点分析ツール<span style="font-size:14px;color:var(--sub)">（YouTube・note・X対応）</span></h1>
+    <p>CSVを読み込むだけ。当たり外れの偏り・強い曜日・効くタイトル・伸び悩みの原因を自動で洗い出します。</p>
+  </header>
+
+  <div class="card">
+    <div class="chips" id="presets">
+      <div class="chip active" data-p="youtube">YouTube</div>
+      <div class="chip" data-p="note">note</div>
+      <div class="chip" data-p="x">X(旧Twitter)</div>
+      <div class="chip" data-p="other">その他CSV</div>
+    </div>
+
+    <div id="drop" class="drop">
+      <div class="ic">📊</div>
+      <strong>CSVをここにドラッグ＆ドロップ</strong>
+      <span class="sub">またはクリックして選択。YouTube Studioの「データのエクスポート」CSVなどに対応</span>
+      <input id="file" type="file" accept=".csv,text/csv" class="hide">
+    </div>
+    <div class="or">― または 表データを貼り付け（1行目は見出し）―</div>
+    <textarea id="paste" placeholder="日付,タイトル,視聴回数,クリック率
+2026/06/01,はじめての投稿,1200,4.1
+..."></textarea>
+    <div class="row">
+      <button id="loadPaste" class="btn ghost" type="button">貼り付けたデータを読み込む</button>
+      <button id="sample" class="btn ghost" type="button">サンプルで試す</button>
+      <span class="spacer"></span>
+    </div>
+    <div id="err" class="err hide"></div>
+
+    <div id="mapper" class="hide">
+      <div class="map">
+        <div><label>日付の列</label><select id="mDate"></select></div>
+        <div><label>タイトル/本文の列</label><select id="mTitle"></select></div>
+        <div><label>主要な指標（伸びの基準）</label><select id="mMetric"></select></div>
+        <div><label>第2の指標（任意・反応率など）</label><select id="mMetric2"></select></div>
+      </div>
+      <div class="map" style="grid-template-columns:1fr;margin-top:6px;">
+        <div class="lbl"><label>レポートの名前（任意）</label><input id="labelName" type="text" placeholder="例：◯◯チャンネル / note @ai_hack_dx"></div>
+      </div>
+      <div class="row">
+        <button id="analyze" class="btn primary" type="button">この内容で分析する</button>
+        <span class="spacer"></span>
+        <span id="rows" style="font-size:12px;color:var(--sub);align-self:center;"></span>
+      </div>
+      <div class="hint"><b>使い方：</b>YouTube Studio →「アナリティクス」→「詳細モード」→「データのエクスポート（CSV）」で出した表が使えます。noteやXは、日付・タイトル・数値（ビューやスキ、インプレッション）が並んだ表ならOK。<b>列の自動判定が違っていたら、上のプルダウンで直してください。</b></div>
+    </div>
+  </div>
+
+  <div id="result" class="card hide">
+    <div class="reportwrap"><canvas id="reportCard" width="560" height="700"></canvas></div>
+    <div class="row" style="justify-content:center;margin-top:12px;">
+      <button id="dlCard" class="btn primary" type="button">⬇ 弱点レポートを画像で保存</button>
+    </div>
+
+    <h2 class="sec">弱点サマリー</h2>
+    <div class="summary"><ul id="weakList"></ul></div>
+
+    <h2 class="sec">当たり・外れの偏り</h2>
+    <div class="grid2">
+      <div><b style="font-size:13px">伸びたトップ5</b><ol class="rank" id="top5"></ol></div>
+      <div><b style="font-size:13px">伸び悩みワースト5</b><ol class="rank" id="bottom5"></ol></div>
+    </div>
+    <div class="stat" id="concentration" style="margin-top:10px;"></div>
+
+    <h2 class="sec">曜日別の平均</h2>
+    <div class="bars" id="weekday"></div>
+
+    <h2 class="sec">タイトルの長さ別の平均</h2>
+    <div class="bars" id="titlelen"></div>
+
+    <h2 class="sec">月別トレンド</h2>
+    <div class="bars" id="monthly"></div>
+
+    <h2 class="sec">効いている言葉（タイトル頻出語×平均成績）</h2>
+    <ul class="kw" id="keywords"></ul>
+    <div class="hint">頻出語の分析は参考値です（少ない件数の語は除外）。平均より高い語＝その切り口が当たりやすいサインです。</div>
+  </div>
+
+  <div class="pills">
+    <span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 13l4 4L19 7"/></svg>サーバー送信なし</span>
+    <span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 13l4 4L19 7"/></svg>登録・インストール不要</span>
+    <span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 13l4 4L19 7"/></svg>YouTube/note/X対応</span>
+    <span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 13l4 4L19 7"/></svg>完全無料</span>
+  </div>
+
+  <footer>
+    Claude Code で作った無料ツールです ・ <a href="https://note.com/ai_hack_dx" target="_blank" rel="noopener">作り方の記事はこちら</a><br>
+    <span class="muted">CSVの読み込み・分析・グラフ描画はすべてブラウザ内で完結（読み込み後はオフラインでも動作）</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var $=function(s){return document.querySelector(s);};
+  var drop=$('#drop'),file=$('#file'),paste=$('#paste'),err=$('#err');
+  var mapper=$('#mapper'),result=$('#result');
+  var mDate=$('#mDate'),mTitle=$('#mTitle'),mMetric=$('#mMetric'),mMetric2=$('#mMetric2'),labelName=$('#labelName'),rowsEl=$('#rows');
+  var preset='youtube';
+  var DATA=null; // {headers:[], rows:[[...]]}
+
+  /* ---------- preset chips ---------- */
+  document.querySelectorAll('#presets .chip').forEach(function(c){
+    c.addEventListener('click',function(){
+      document.querySelectorAll('#presets .chip').forEach(function(x){x.classList.remove('active');});
+      c.classList.add('active'); preset=c.getAttribute('data-p');
+      if(DATA) autoMap();
+    });
+  });
+
+  /* ---------- file / paste ---------- */
+  drop.addEventListener('click',function(){file.click();});
+  drop.addEventListener('dragover',function(e){e.preventDefault();drop.classList.add('drag');});
+  drop.addEventListener('dragleave',function(){drop.classList.remove('drag');});
+  drop.addEventListener('drop',function(e){e.preventDefault();drop.classList.remove('drag');if(e.dataTransfer.files[0])readFile(e.dataTransfer.files[0]);});
+  file.addEventListener('change',function(){if(file.files[0])readFile(file.files[0]);});
+  $('#loadPaste').addEventListener('click',function(){
+    var t=paste.value.trim(); if(!t){showErr('貼り付け欄が空です。');return;}
+    loadText(t);
+  });
+  $('#sample').addEventListener('click',function(){loadText(sampleCSV());});
+
+  function readFile(f){
+    var r=new FileReader();
+    r.onload=function(){loadText(String(r.result));};
+    r.onerror=function(){showErr('ファイルを読み込めませんでした。');};
+    r.readAsText(f);
+  }
+  function showErr(m){err.textContent=m;err.classList.remove('hide');}
+  function clearErr(){err.classList.add('hide');err.textContent='';}
+
+  /* ---------- CSV parse ---------- */
+  function parseCSV(text){
+    text=text.replace(/^﻿/,'');
+    // detect delimiter from first line
+    var first=text.split(/\r?\n/)[0]||'';
+    var delim = (first.split('\t').length>first.split(',').length)?'\t':',';
+    var rows=[],row=[],val='',q=false,i=0,c;
+    for(i=0;i<text.length;i++){
+      c=text[i];
+      if(q){
+        if(c==='"'){ if(text[i+1]==='"'){val+='"';i++;} else q=false; }
+        else val+=c;
+      }else{
+        if(c==='"')q=true;
+        else if(c===delim){row.push(val);val='';}
+        else if(c==='\n'){row.push(val);rows.push(row);row=[];val='';}
+        else if(c==='\r'){}
+        else val+=c;
+      }
+    }
+    if(val.length||row.length){row.push(val);rows.push(row);}
+    // drop empty trailing rows
+    rows=rows.filter(function(r){return r.some(function(x){return String(x).trim()!=='';});});
+    return rows;
+  }
+
+  function loadText(text){
+    clearErr();
+    var rows=parseCSV(text);
+    if(rows.length<2){showErr('データが足りません。1行目に見出し、2行目以降にデータが必要です。');return;}
+    var headers=rows[0].map(function(h){return String(h).trim();});
+    var body=rows.slice(1).filter(function(r){return r.length>=1;});
+    // normalize row length
+    body=body.map(function(r){var a=r.slice(0,headers.length);while(a.length<headers.length)a.push('');return a;});
+    DATA={headers:headers,rows:body};
+    buildSelects();
+    autoMap();
+    mapper.classList.remove('hide');
+    rowsEl.textContent=body.length+'件 読み込みました';
+    mapper.scrollIntoView({block:'nearest'});
+  }
+
+  /* ---------- value helpers ---------- */
+  function toNum(v){
+    if(v==null)return NaN;
+    var s=String(v).trim().replace(/,/g,'').replace(/%/g,'').replace(/\s/g,'');
+    var mul=1;
+    if(/万$/.test(s)){mul=10000;s=s.replace(/万$/,'');}
+    else if(/千$/.test(s)){mul=1000;s=s.replace(/千$/,'');}
+    if(s===''||isNaN(Number(s)))return NaN;
+    return Number(s)*mul;
+  }
+  function parseDate(v){
+    if(!v)return null;
+    var s=String(v).trim();
+    var m=s.match(/(\d{4})[\/\-年\.](\d{1,2})[\/\-月\.](\d{1,2})(?:[ T](\d{1,2}):(\d{2}))?/);
+    if(m){
+      var d=new Date(+m[1],(+m[2])-1,+m[3],m[4]?+m[4]:0,m[5]?+m[5]:0);
+      if(!isNaN(d.getTime()))return d;
+    }
+    var d2=new Date(s);
+    return isNaN(d2.getTime())?null:d2;
+  }
+  function colValues(idx){return DATA.rows.map(function(r){return r[idx];});}
+  function isDateCol(idx){
+    var v=colValues(idx),ok=0,tot=0;
+    for(var i=0;i<v.length && i<40;i++){if(String(v[i]).trim()===''){continue;}tot++;if(parseDate(v[i]))ok++;}
+    return tot>0 && ok/tot>0.6;
+  }
+  function isNumCol(idx){
+    var v=colValues(idx),ok=0,tot=0;
+    for(var i=0;i<v.length && i<40;i++){if(String(v[i]).trim()===''){continue;}tot++;if(!isNaN(toNum(v[i])))ok++;}
+    return tot>0 && ok/tot>0.7;
+  }
+  function avgLen(idx){
+    var v=colValues(idx),s=0,n=0;
+    for(var i=0;i<v.length;i++){var t=String(v[i]).trim();if(t){s+=t.length;n++;}}
+    return n?s/n:0;
+  }
+
+  /* ---------- selects ---------- */
+  function buildSelects(){
+    [mDate,mTitle,mMetric,mMetric2].forEach(function(sel){sel.innerHTML='';});
+    DATA.headers.forEach(function(h,i){
+      [mDate,mTitle,mMetric,mMetric2].forEach(function(sel){
+        var o=document.createElement('option');o.value=i;o.textContent=(h||('列'+(i+1)));sel.appendChild(o);
+      });
+    });
+    var none=document.createElement('option');none.value='-1';none.textContent='（なし）';mMetric2.insertBefore(none,mMetric2.firstChild);
+  }
+
+  var PRESET_HINTS={
+    youtube:{date:/公開|日時|date|時刻/i,title:/タイトル|title|動画|コンテンツ/i,metric:/視聴回数|再生|views?|インプレッション/i,metric2:/クリック率|ctr|維持|平均視聴/i},
+    note:{date:/日付|公開|date/i,title:/タイトル|title|記事|見出し/i,metric:/ビュー|view|閲覧|pv|読まれ/i,metric2:/スキ|like|コメント|フォロー/i},
+    x:{date:/日付|date|時刻|time/i,title:/本文|ツイート|tweet|text|投稿/i,metric:/インプレッション|impressions?|表示/i,metric2:/エンゲージ|engagement|いいね|like|リポスト/i},
+    other:{date:/日付|date|時刻|time|公開/i,title:/タイトル|title|名前|本文|text/i,metric:/数|回数|count|view|スコア|value/i,metric2:/率|rate|%/i}
+  };
+  function pickByHint(re,pred){
+    for(var i=0;i<DATA.headers.length;i++){if(re.test(DATA.headers[i])&&(!pred||pred(i)))return i;}
+    return -1;
+  }
+  function autoMap(){
+    var hint=PRESET_HINTS[preset]||PRESET_HINTS.other;
+    // date
+    var d=pickByHint(hint.date,isDateCol);
+    if(d<0){for(var i=0;i<DATA.headers.length;i++){if(isDateCol(i)){d=i;break;}}}
+    if(d<0)d=0;
+    // title: hint text col, else longest-text non-date non-num
+    var t=pickByHint(hint.title,function(i){return !isNumCol(i)&&!isDateCol(i);});
+    if(t<0){var best=-1,bl=-1;for(var j=0;j<DATA.headers.length;j++){if(j===d||isNumCol(j)||isDateCol(j))continue;var l=avgLen(j);if(l>bl){bl=l;best=j;}}t=best;}
+    if(t<0)t=(d===0?1:0);
+    // metric: hint num col, else num col with largest mean
+    var m=pickByHint(hint.metric,isNumCol);
+    if(m<0){var bm=-1,bmean=-1;for(var k=0;k<DATA.headers.length;k++){if(!isNumCol(k))continue;var mean=meanOf(k);if(mean>bmean){bmean=mean;bm=k;}}m=bm;}
+    if(m<0)m=Math.min(2,DATA.headers.length-1);
+    // metric2: hint, else another num col
+    var m2=pickByHint(hint.metric2,function(i){return isNumCol(i)&&i!==m;});
+    mDate.value=d;mTitle.value=t;mMetric.value=m;mMetric2.value=(m2>=0?m2:'-1');
+  }
+  function meanOf(idx){var v=colValues(idx),s=0,n=0;for(var i=0;i<v.length;i++){var x=toNum(v[i]);if(!isNaN(x)){s+=x;n++;}}return n?s/n:0;}
+
+  /* ---------- analyze ---------- */
+  $('#analyze').addEventListener('click',analyze);
+
+  function fmt(n){
+    if(!isFinite(n))return '-';
+    if(Math.abs(n)>=10000)return (Math.round(n/100)/100).toLocaleString()+'万';
+    if(Number.isInteger(n))return n.toLocaleString();
+    return (Math.round(n*100)/100).toLocaleString();
+  }
+  function median(arr){var a=arr.slice().sort(function(x,y){return x-y;});var n=a.length;if(!n)return 0;return n%2?a[(n-1)/2]:(a[n/2-1]+a[n/2])/2;}
+
+  function buildItems(){
+    var di=+mDate.value,ti=+mTitle.value,mi=+mMetric.value,m2=+mMetric2.value;
+    var items=[];
+    DATA.rows.forEach(function(r){
+      var val=toNum(r[mi]); if(isNaN(val))return;
+      var date=parseDate(r[di]);
+      items.push({title:String(r[ti]||'').trim(),val:val,val2:(m2>=0?toNum(r[m2]):NaN),date:date});
+    });
+    return {items:items,metricName:DATA.headers[mi]||'指標',metric2Name:(m2>=0?(DATA.headers[m2]||'指標2'):null)};
+  }
+
+  function analyze(){
+    var b=buildItems();
+    var items=b.items;
+    if(items.length<3){showErr('分析できる行が少なすぎます（数値が読めた行が3件未満）。列の指定を見直してください。');return;}
+    clearErr();
+    var vals=items.map(function(x){return x.val;});
+    var total=vals.reduce(function(a,c){return a+c;},0);
+    var avg=total/vals.length, med=median(vals);
+    var max=Math.max.apply(null,vals), min=Math.min.apply(null,vals);
+
+    // ranking
+    var sorted=items.slice().sort(function(a,c){return c.val-a.val;});
+    var top5=sorted.slice(0,5), bottom5=sorted.slice(-5).reverse();
+
+    // concentration (pareto)
+    var topCount=Math.max(1,Math.round(items.length*0.2));
+    var topShare=sorted.slice(0,topCount).reduce(function(a,c){return a+c.val;},0)/total;
+    var top3Share=sorted.slice(0,3).reduce(function(a,c){return a+c.val;},0)/total;
+
+    // weekday
+    var wd=[[],[],[],[],[],[],[]];
+    items.forEach(function(x){if(x.date)wd[x.date.getDay()].push(x.val);});
+    var WDN=['日','月','火','水','木','金','土'];
+    var wdAvg=wd.map(function(arr,i){return {lab:WDN[i]+'曜',avg:arr.length?arr.reduce(function(a,c){return a+c;},0)/arr.length:null,n:arr.length};});
+    var wdValid=wdAvg.filter(function(x){return x.avg!=null;});
+
+    // title length buckets
+    var buckets=[{lab:'〜15字',lo:0,hi:15,v:[]},{lab:'16〜25字',lo:16,hi:25,v:[]},{lab:'26〜35字',lo:26,hi:35,v:[]},{lab:'36字〜',lo:36,hi:1e9,v:[]}];
+    items.forEach(function(x){var L=x.title.length;for(var i=0;i<buckets.length;i++){if(L>=buckets[i].lo&&L<=buckets[i].hi){buckets[i].v.push(x.val);break;}}});
+    var lenAvg=buckets.map(function(bk){return {lab:bk.lab,avg:bk.v.length?bk.v.reduce(function(a,c){return a+c;},0)/bk.v.length:null,n:bk.v.length};});
+
+    // monthly
+    var mmap={};
+    items.forEach(function(x){if(!x.date)return;var k=x.date.getFullYear()+'/'+('0'+(x.date.getMonth()+1)).slice(-2);(mmap[k]=mmap[k]||[]).push(x.val);});
+    var mKeys=Object.keys(mmap).sort();
+    var monthly=mKeys.map(function(k){var a=mmap[k];return {lab:k,avg:a.reduce(function(s,c){return s+c;},0)/a.length,n:a.length};});
+
+    // keywords
+    var kw=keywordStats(items,avg);
+
+    render({items:items,metricName:b.metricName,metric2Name:b.metric2Name,total:total,avg:avg,med:med,max:max,min:min,
+      top5:top5,bottom5:bottom5,topShare:topShare,top3Share:top3Share,topCount:topCount,
+      wdAvg:wdAvg,wdValid:wdValid,lenAvg:lenAvg,monthly:monthly,kw:kw});
+  }
+
+  function keywordStats(items,avg){
+    var stop={'する':1,'こと':1,'ます':1,'した':1,'これ':1,'ない':1,'てる':1,'まし':1,'です':1,'ため':1,'よう':1,'もの':1,'なる':1,'いる':1,'から':1,'まで':1,'the':1,'and':1,'for':1,'you':1};
+    var map={};
+    items.forEach(function(x){
+      var toks={};
+      // bracket terms
+      (x.title.match(/[【「『（(\[][^】」』）)\]]{1,12}[】」』）)\]]/g)||[]).forEach(function(t){var w=t.replace(/[【」「』（()）\]\[]/g,'').trim();if(w.length>=2)toks[w]=1;});
+      // split tokens
+      x.title.split(/[\s、。,.\/|｜・:：!！?？\-―—()（）\[\]【】「」『』#＃%％&＆…]+/).forEach(function(w){
+        w=w.trim(); if(w.length<2||w.length>12)return; if(stop[w])return; if(/^\d+$/.test(w))return; toks[w]=1;
+      });
+      Object.keys(toks).forEach(function(w){ (map[w]=map[w]||[]).push(x.val); });
+    });
+    var minCount=Math.max(2,Math.round(items.length*0.06));
+    var arr=Object.keys(map).filter(function(w){return map[w].length>=minCount;}).map(function(w){
+      var a=map[w];var m=a.reduce(function(s,c){return s+c;},0)/a.length;return {w:w,n:a.length,avg:m,ratio:avg?m/avg:1};
+    });
+    arr.sort(function(a,c){return c.ratio-a.ratio;});
+    return arr.slice(0,8);
+  }
+
+  /* ---------- render ---------- */
+  function bars(el,rows,opt){
+    opt=opt||{};
+    var max=Math.max.apply(null,rows.map(function(r){return r.avg||0;}))||1;
+    var bestI=-1,worstI=-1,bv=-Infinity,wv=Infinity;
+    rows.forEach(function(r,i){if(r.avg==null)return;if(r.avg>bv){bv=r.avg;bestI=i;}if(r.avg<wv){wv=r.avg;worstI=i;}});
+    el.innerHTML='';
+    rows.forEach(function(r,i){
+      var row=document.createElement('div');row.className='barrow'+(opt.mark&&i===bestI?' best':'')+(opt.mark&&i===worstI?' worst':'');
+      var pct=r.avg==null?0:Math.max(2,Math.round(r.avg/max*100));
+      row.innerHTML='<div class="blab">'+r.lab+'</div><div class="btrack"><div class="bfill" style="width:'+pct+'%"></div></div><div class="bval">'+(r.avg==null?'—':fmt(r.avg))+(r.n!=null?' <span style="color:#94a3b8">('+r.n+')</span>':'')+'</div>';
+      el.appendChild(row);
+    });
+  }
+
+  function render(R){
+    result.classList.remove('hide');
+    // weakness summary
+    var w=[];
+    if(R.top3Share>0.5) w.push('上位3本だけで全体の<b>'+Math.round(R.top3Share*100)+'%</b>を占めています。<b class="bad">一部の当たりに依存</b>し、量産の再現性が低いサインです。');
+    if(R.topShare>0.7) w.push('上位20%の投稿が全体の<b>'+Math.round(R.topShare*100)+'%</b>。ヒットの偏りが大きく、平均的な底上げが課題です。');
+    if(R.med>0 && R.avg/R.med>1.8) w.push('平均が中央値の<b>'+(Math.round(R.avg/R.med*10)/10)+'倍</b>。少数のバズが平均を押し上げ、<b>「普段の実力」は中央値（'+fmt(R.med)+'）に近い</b>と見るべきです。');
+    // weekday best/worst
+    var wv=R.wdValid;
+    if(wv.length>=3){
+      var bestW=wv.slice().sort(function(a,c){return c.avg-a.avg;})[0];
+      var worstW=wv.slice().sort(function(a,c){return a.avg-c.avg;})[0];
+      if(bestW&&worstW&&worstW.avg>0&&bestW.avg/worstW.avg>=1.5)
+        w.push('<b>'+bestW.lab+'</b>が強く（平均'+fmt(bestW.avg)+'）、<b class="bad">'+worstW.lab+'</b>が弱い（'+fmt(worstW.avg)+'）。曜日で'+(Math.round(bestW.avg/worstW.avg*10)/10)+'倍の差。弱い曜日の投稿を見直す余地があります。');
+    }
+    // title length
+    var lv=R.lenAvg.filter(function(x){return x.avg!=null&&x.n>=2;});
+    if(lv.length>=2){
+      var bL=lv.slice().sort(function(a,c){return c.avg-a.avg;})[0];
+      var wL=lv.slice().sort(function(a,c){return a.avg-c.avg;})[0];
+      if(bL&&wL&&bL.lab!==wL.lab&&wL.avg>0&&bL.avg/wL.avg>=1.3)
+        w.push('タイトルは<b>'+bL.lab+'</b>が伸び、<b class="bad">'+wL.lab+'</b>が伸びにくい傾向。長さの当たり幅が見えています。');
+    }
+    // keyword
+    if(R.kw.length){
+      var topk=R.kw[0];
+      if(topk.ratio>=1.3) w.push('「<b>'+topk.w+'</b>」を含む投稿は平均の<b>'+(Math.round(topk.ratio*100))+'%</b>の成績。この切り口は<b>当たりやすい</b>ので増やす価値があります。');
+    }
+    if(!w.length) w.push('大きな偏りは見つかりませんでした。安定して投稿できています。次は「効いている言葉」を増やして平均の底上げを狙いましょう。');
+    $('#weakList').innerHTML=w.map(function(x){return '<li>'+x+'</li>';}).join('');
+
+    // rankings
+    function li(x){return '<li><span class="m">'+fmt(x.val)+'</span>　'+escapeHtml(x.title||'（無題）')+'</li>';}
+    $('#top5').innerHTML=R.top5.map(li).join('');
+    $('#bottom5').innerHTML=R.bottom5.map(li).join('');
+    $('#concentration').innerHTML='<div class="k">集中度（パレート）</div><div class="v">上位20%（'+R.topCount+'本）が全体の '+Math.round(R.topShare*100)+'%</div><div style="font-size:12px;color:var(--sub)">平均 '+fmt(R.avg)+' ／ 中央値 '+fmt(R.med)+' ／ 最大 '+fmt(R.max)+' ／ 最小 '+fmt(R.min)+'（指標：'+escapeHtml(R.metricName)+'）</div>';
+
+    bars($('#weekday'),R.wdAvg,{mark:true});
+    bars($('#titlelen'),R.lenAvg,{mark:true});
+    bars($('#monthly'),R.monthly.map(function(m){return {lab:m.lab.slice(2),avg:m.avg,n:m.n};}),{});
+    $('#keywords').innerHTML=R.kw.length?R.kw.map(function(k){
+      var tag=k.ratio>=1.15?'<span style="color:var(--good);font-weight:800">▲効く</span>':(k.ratio<=0.85?'<span style="color:var(--danger);font-weight:800">▼弱い</span>':'<span style="color:#94a3b8">→普通</span>');
+      return '<li>'+tag+' 「'+escapeHtml(k.w)+'」 平均比 '+Math.round(k.ratio*100)+'%（'+k.n+'本）</li>';
+    }).join(''):'<li style="color:#94a3b8">十分な頻出語が見つかりませんでした。</li>';
+
+    drawCard(R);
+    result.scrollIntoView({block:'start'});
+  }
+
+  function escapeHtml(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+  /* ---------- canvas report card ---------- */
+  function drawCard(R){
+    var cv=$('#reportCard'),x=cv.getContext('2d');
+    var W=cv.width,H=cv.height;
+    x.fillStyle='#0f172a';x.fillRect(0,0,W,H);
+    // header band
+    var g=x.createLinearGradient(0,0,W,140);g.addColorStop(0,'#1d4ed8');g.addColorStop(1,'#2563eb');
+    x.fillStyle=g;x.fillRect(0,0,W,150);
+    x.fillStyle='#bfdbfe';x.font='600 16px sans-serif';x.fillText('コンテンツ弱点レポート',32,46);
+    x.fillStyle='#fff';x.font='800 28px sans-serif';
+    var name=(labelName.value.trim()||'あなたのコンテンツ');
+    x.fillText(cut(x,name,W-64),32,88);
+    x.fillStyle='#dbeafe';x.font='13px sans-serif';
+    var period='';
+    var dated=R.items.filter(function(i){return i.date;}).map(function(i){return i.date;});
+    if(dated.length){var mn=new Date(Math.min.apply(null,dated)),mx=new Date(Math.max.apply(null,dated));period=fmtD(mn)+' 〜 '+fmtD(mx)+'　';}
+    x.fillText(period+R.items.length+'本　指標：'+R.metricName,32,118);
+
+    var y=190;
+    // stat row
+    statBox(x,32,y,(W-64-20)/3,'平均',fmt(R.avg));
+    statBox(x,32+(W-64-20)/3+10,y,(W-64-20)/3,'中央値',fmt(R.med));
+    statBox(x,32+((W-64-20)/3+10)*2,y,(W-64-20)/3,'最大',fmt(R.max));
+    y+=104;
+
+    // weaknesses (top 3 plain)
+    x.fillStyle='#f8fafc';x.font='800 17px sans-serif';x.fillText('みつかった弱点',32,y);y+=14;
+    var plain=plainWeak(R).slice(0,3);
+    x.font='14px sans-serif';
+    plain.forEach(function(t){
+      y+=26;
+      x.fillStyle='#f59e0b';x.fillText('●',32,y);
+      x.fillStyle='#e2e8f0';
+      wrapText(x,t,54,y,W-86,20);
+      y+=lineCount(x,t,W-86)*20-20;
+    });
+    y+=34;
+
+    // best / worst
+    x.fillStyle='#34d399';x.font='800 14px sans-serif';x.fillText('▲ 一番伸びた',32,y);
+    x.fillStyle='#f87171';x.fillText('▼ 一番伸び悩んだ',W/2+6,y);
+    y+=24;
+    x.fillStyle='#e2e8f0';x.font='13px sans-serif';
+    x.fillText(cut(x,fmt(R.top5[0].val)+'  '+R.top5[0].title,W/2-46),32,y);
+    var wlast=R.bottom5[0];
+    x.fillText(cut(x,fmt(wlast.val)+'  '+wlast.title,W/2-46),W/2+6,y);
+    y+=40;
+
+    // weekday mini bars
+    x.fillStyle='#f8fafc';x.font='800 15px sans-serif';x.fillText('曜日別の平均',32,y);y+=16;
+    var wd=R.wdAvg, maxw=Math.max.apply(null,wd.map(function(d){return d.avg||0;}))||1;
+    var bw=(W-64)/7, bx=32;
+    wd.forEach(function(d){
+      var hh=d.avg==null?0:Math.max(3,(d.avg/maxw)*120);
+      x.fillStyle=d.avg==null?'#334155':'#60a5fa';
+      x.fillRect(bx+6,y+130-hh,bw-12,hh);
+      x.fillStyle='#94a3b8';x.font='12px sans-serif';x.textAlign='center';
+      x.fillText(d.lab.charAt(0),bx+bw/2,y+148);
+      x.textAlign='left';
+      bx+=bw;
+    });
+    y+=170;
+
+    // footer
+    x.fillStyle='#1e293b';x.fillRect(0,H-44,W,44);
+    x.fillStyle='#93c5fd';x.font='12px sans-serif';
+    x.fillText('ブラウザ内だけで分析（送信なし）・ai-hack-dx.github.io / 今日から使えるAI実践帳',32,H-18);
+  }
+  function statBox(x,bx,by,bw,k,v){
+    x.fillStyle='#1e293b';roundRect(x,bx,by,bw,84,12);x.fill();
+    x.fillStyle='#94a3b8';x.font='12px sans-serif';x.fillText(k,bx+14,by+26);
+    x.fillStyle='#fff';x.font='800 26px sans-serif';x.fillText(v,bx+14,by+60);
+  }
+  function plainWeak(R){
+    var w=[];
+    if(R.top3Share>0.5)w.push('上位3本で全体の'+Math.round(R.top3Share*100)+'%。当たり依存で再現性が低い');
+    if(R.med>0&&R.avg/R.med>1.8)w.push('平均は中央値の'+(Math.round(R.avg/R.med*10)/10)+'倍。普段の実力は中央値'+fmt(R.med)+'に近い');
+    var wv=R.wdValid;
+    if(wv.length>=3){var bb=wv.slice().sort(function(a,c){return c.avg-a.avg;})[0],ww=wv.slice().sort(function(a,c){return a.avg-c.avg;})[0];if(bb&&ww&&ww.avg>0&&bb.avg/ww.avg>=1.5)w.push(bb.lab+'が強く'+ww.lab+'が弱い（'+(Math.round(bb.avg/ww.avg*10)/10)+'倍差）');}
+    if(R.kw.length&&R.kw[0].ratio>=1.3)w.push('「'+R.kw[0].w+'」を含むと平均の'+Math.round(R.kw[0].ratio*100)+'%。この切り口が当たりやすい');
+    if(R.topShare>0.7)w.push('上位20%が全体の'+Math.round(R.topShare*100)+'%。平均の底上げが課題');
+    if(!w.length)w.push('大きな偏りなし。安定投稿できています');
+    return w;
+  }
+  function roundRect(x,bx,by,bw,bh,r){x.beginPath();x.moveTo(bx+r,by);x.arcTo(bx+bw,by,bx+bw,by+bh,r);x.arcTo(bx+bw,by+bh,bx,by+bh,r);x.arcTo(bx,by+bh,bx,by,r);x.arcTo(bx,by,bx+bw,by,r);x.closePath();}
+  function cut(x,s,w){s=String(s);if(x.measureText(s).width<=w)return s;while(s.length&&x.measureText(s+'…').width>w)s=s.slice(0,-1);return s+'…';}
+  function fmtD(d){return d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate();}
+  function wrapText(ctx,text,x0,y0,maxW,lh){var words=text.split(''),line='',yy=y0;for(var i=0;i<words.length;i++){var test=line+words[i];if(ctx.measureText(test).width>maxW){ctx.fillText(line,x0,yy);line=words[i];yy+=lh;}else line=test;}ctx.fillText(line,x0,yy);}
+  function lineCount(ctx,text,maxW){var words=text.split(''),line='',n=1;for(var i=0;i<words.length;i++){var test=line+words[i];if(ctx.measureText(test).width>maxW){n++;line=words[i];}else line=test;}return n;}
+
+  $('#dlCard').addEventListener('click',function(){
+    $('#reportCard').toBlob(function(b){
+      var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='content-report.png';document.body.appendChild(a);a.click();
+      setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},500);
+    },'image/png');
+  });
+
+  /* ---------- sample ---------- */
+  function sampleCSV(){
+    return ['日付,タイトル,視聴回数,クリック率',
+    '2026/04/01,【保存版】はじめてのClaude Code入門,8200,5.2',
+    '2026/04/05,Excel集計を3分で終わらせる方法,2100,3.1',
+    '2026/04/08,非エンジニアがアプリを作ってみた,15800,6.8',
+    '2026/04/12,議事録を自動でまとめる手順,1750,2.9',
+    '2026/04/15,【実演】請求書作成を自動化,2600,3.4',
+    '2026/04/19,失敗談：丸投げで詰まった話,4300,4.6',
+    '2026/04/22,Claude Codeの料金を徹底解説,1900,2.7',
+    '2026/04/26,写真を一括リネームしてみた,3100,3.8',
+    '2026/05/03,【保存版】プロンプトの型7選,9700,5.5',
+    '2026/05/06,ペット写真を擬人化してみた,12400,6.1',
+    '2026/05/10,メール返信を半自動にする,1500,2.4',
+    '2026/05/13,【実演】名刺データをCSV化,2200,3.0',
+    '2026/05/17,非エンジニアの3ヶ月の記録,5600,4.9',
+    '2026/05/20,安全設定で勝手に動くのを止める,2800,3.6',
+    '2026/05/24,スプレッドシート整形のコツ,1600,2.5',
+    '2026/05/27,【保存版】よく使うコマンド集,8800,5.1',
+    '2026/05/31,動画の文字起こしをやってみた,4100,4.2',
+    '2026/06/03,請求書テンプレを作る,1700,2.6',
+    '2026/06/07,【実演】画像をまとめて変換,3300,3.9',
+    '2026/06/10,非エンジニアがハマる罠5つ,6200,4.7'].join('\n');
+  }
+})();
+</script>
+</body>
+</html>
