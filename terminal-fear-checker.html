@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ターミナル恐怖度診断｜「黒い画面が怖い」を3分で見える化</title>
+<meta name="description" content="Claude Codeの「黒い画面（ターミナル）が怖い」を5つの質問で診断。あなたの恐怖度レベルと、今日からできる安全な最初の一歩がわかる無料ツール。登録不要・ブラウザ内で完結。">
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2430;
+    --border:#30363d; --text:#e6edf3; --muted:#8b949e;
+    --green:#3fb950; --orange:#ff8c42; --red:#f85149; --yellow:#e3b341;
+    --blue:#58a6ff;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;
+    line-height:1.7; padding:0 16px 80px;
+  }
+  .wrap{max-width:680px; margin:0 auto;}
+  header{text-align:center; padding:40px 0 24px;}
+  .term-dots{display:inline-flex; gap:7px; margin-bottom:18px;}
+  .term-dots span{width:13px; height:13px; border-radius:50%;}
+  .term-dots span:nth-child(1){background:#ff5f56;}
+  .term-dots span:nth-child(2){background:#ffbd2e;}
+  .term-dots span:nth-child(3){background:#27c93f;}
+  h1{font-size:26px; margin:0 0 10px; letter-spacing:.5px;}
+  h1 .mono{font-family:"SF Mono",Menlo,Consolas,monospace; color:var(--green);}
+  .lead{color:var(--muted); font-size:15px; margin:0 auto; max-width:520px;}
+  .card{
+    background:var(--panel); border:1px solid var(--border);
+    border-radius:14px; padding:22px 20px; margin:18px 0;
+  }
+  .q-num{
+    display:inline-block; font-family:"SF Mono",Menlo,monospace;
+    color:var(--orange); font-size:13px; font-weight:700; margin-bottom:8px;
+    letter-spacing:1px;
+  }
+  .q-text{font-size:17px; font-weight:700; margin:0 0 16px;}
+  .opt{
+    display:block; width:100%; text-align:left; cursor:pointer;
+    background:var(--panel2); border:1px solid var(--border); color:var(--text);
+    border-radius:10px; padding:13px 15px; margin:8px 0; font-size:15px;
+    transition:.15s; font-family:inherit; line-height:1.5;
+  }
+  .opt:hover{border-color:var(--orange); transform:translateY(-1px);}
+  .opt.sel{border-color:var(--orange); background:rgba(255,140,66,.12); box-shadow:0 0 0 1px var(--orange) inset;}
+  .opt .mk{color:var(--orange); font-weight:700; margin-right:8px;}
+  .actions{text-align:center; margin:26px 0 10px;}
+  .btn{
+    background:linear-gradient(135deg,var(--orange),#ff6b35); color:#fff; border:none;
+    font-size:17px; font-weight:700; padding:15px 40px; border-radius:12px; cursor:pointer;
+    font-family:inherit; box-shadow:0 6px 18px rgba(255,107,53,.32); transition:.15s;
+  }
+  .btn:hover{transform:translateY(-2px); box-shadow:0 9px 24px rgba(255,107,53,.42);}
+  .btn:disabled{opacity:.45; cursor:not-allowed; transform:none; box-shadow:none;}
+  .btn.ghost{background:transparent; border:1px solid var(--border); color:var(--muted); box-shadow:none; font-size:14px; padding:11px 24px;}
+  .btn.ghost:hover{border-color:var(--muted); color:var(--text);}
+  .hint{color:var(--muted); font-size:13px; text-align:center; margin-top:10px;}
+  #result{display:none;}
+  .result-canvas-wrap{text-align:center; margin:10px 0 4px;}
+  canvas{max-width:100%; height:auto; border-radius:14px; box-shadow:0 10px 40px rgba(0,0,0,.5);}
+  .res-actions{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin:20px 0 8px;}
+  .step-box{
+    background:var(--panel); border:1px solid var(--border); border-left:4px solid var(--green);
+    border-radius:10px; padding:16px 18px; margin:18px 0;
+  }
+  .step-box h3{margin:0 0 8px; font-size:15px; color:var(--green);}
+  .step-box p{margin:0; font-size:15px;}
+  footer{text-align:center; color:var(--muted); font-size:12px; margin-top:40px; line-height:1.8;}
+  footer a{color:var(--blue); text-decoration:none;}
+  .badge{
+    position:fixed; right:14px; bottom:14px; background:var(--orange); color:#fff;
+    font-size:11px; font-weight:700; padding:6px 11px; border-radius:20px;
+    box-shadow:0 4px 12px rgba(0,0,0,.4); font-family:"SF Mono",monospace;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="term-dots"><span></span><span></span><span></span></div>
+    <h1><span class="mono">$</span> ターミナル恐怖度診断</h1>
+    <p class="lead">「黒い画面が怖い」は弱点ではなく、慎重さの裏返し。5つの質問で恐怖度を見える化して、今日からできる<strong>安全な最初の一歩</strong>を受け取りましょう。</p>
+  </header>
+
+  <div id="quiz"></div>
+
+  <div class="actions">
+    <button class="btn" id="diagnose" disabled>恐怖度を診断する</button>
+    <p class="hint" id="progress">5問すべてに答えると診断できます</p>
+  </div>
+
+  <div id="result" class="card">
+    <div class="result-canvas-wrap">
+      <canvas id="card" width="560" height="700"></canvas>
+    </div>
+    <div class="step-box">
+      <h3>🚶 あなたの「最初の一歩」</h3>
+      <p id="stepText"></p>
+    </div>
+    <div class="res-actions">
+      <button class="btn" id="save">診断カードを保存する</button>
+      <button class="btn ghost" id="retry">もう一度診断する</button>
+    </div>
+    <p class="hint">保存したカードはSNSでシェアできます（#ターミナル恐怖度診断）</p>
+  </div>
+
+  <footer>
+    すべてブラウザ内で完結します。入力内容はどこにも送信されません。<br>
+    作成：今日から使えるAI実践帳（<a href="https://x.com/ai_hack_dx" target="_blank" rel="noopener">@ai_hack_dx</a>）
+  </footer>
+</div>
+<div class="badge">Claude Code</div>
+
+<script>
+const QUESTIONS = [
+  {
+    q:"「黒い画面（ターミナル）」と聞いて、どう感じますか？",
+    opts:[
+      {t:"何も感じない。普通に使える", v:0},
+      {t:"ちょっと身構える", v:1},
+      {t:"かなり苦手で、できれば避けたい", v:2},
+      {t:"見るだけで無理。固まってしまう", v:3},
+    ]
+  },
+  {
+    q:"Claude Codeに作業を任せるとき、いちばん怖いのは？",
+    opts:[
+      {t:"特にない", v:0},
+      {t:"何をやっているのか分からないこと", v:1},
+      {t:"勝手に変なことをしそうなこと", v:2},
+      {t:"パソコンやデータが壊れそうなこと", v:3},
+    ]
+  },
+  {
+    q:"英語のエラーメッセージが出たら、どうしますか？",
+    opts:[
+      {t:"読んで自分で対処できる", v:0},
+      {t:"コピペして調べる・AIに聞く", v:1},
+      {t:"とりあえず閉じてしまう", v:2},
+      {t:"頭が真っ白になる", v:3},
+    ]
+  },
+  {
+    q:"「やったことは元に戻せます」と言われたら？",
+    opts:[
+      {t:"知っている。だから安心", v:0},
+      {t:"なんとなく分かる", v:1},
+      {t:"半信半疑", v:2},
+      {t:"信じられない。やっぱり怖い", v:3},
+    ]
+  },
+  {
+    q:"いまのあなたのスタンスに近いのは？",
+    opts:[
+      {t:"もう使っている", v:0},
+      {t:"近いうちに試したい", v:1},
+      {t:"気になるけど踏み出せない", v:2},
+      {t:"怖くて見て見ぬふりをしている", v:3},
+    ]
+  },
+];
+
+const RESULTS = [
+  {
+    min:0, max:3, lv:"LEVEL 1", name:"黒い画面マスター",
+    phrase:"恐怖はほぼゼロ。あとは任せる範囲を広げるだけ。",
+    color:"#3fb950",
+    desc:"あなたにとって黒い画面はもう日常の道具。次の伸びしろは「守りを固めて、もっと大胆に任せる」ことです。",
+    step:"settings.json の allow に、よく使う安全なコマンドを登録しましょう。毎回の確認が減って、安心したまま本格運用に進めます。"
+  },
+  {
+    min:4, max:7, lv:"LEVEL 2", name:"あと一歩タイプ",
+    phrase:"こわさより好奇心が勝ち始めている。",
+    color:"#e3b341",
+    desc:"基本の安心材料は理解できています。残っているのは「実際に一度やってみる」という小さなハードルだけ。",
+    step:"小さな1ファイルを作らせてみましょう。気に入らなければ削除すればいいだけ。1回の成功体験で、恐怖はほとんど消えます。"
+  },
+  {
+    min:8, max:11, lv:"LEVEL 3", name:"慎重派タイプ",
+    phrase:"怖いのは、見えないから。見えれば怖くない。",
+    color:"#ff8c42",
+    desc:"「勝手に動く」「壊れる」が不安の中心。でも実際は、あなたが承認するまで何も実行されない仕組みがあります。",
+    step:"プランモードで「何をするか先に全部見せて」と頼みましょう。中身を読んで、納得してから承認。あなたが指揮官のままで進められます。"
+  },
+  {
+    min:12, max:15, lv:"LEVEL 4", name:"これから克服タイプ",
+    phrase:"いちばん慎重なあなたが、いちばん安全に使える。",
+    color:"#f85149",
+    desc:"恐怖が強いのは、リスクをちゃんと想像できている証拠。その慎重さは、AIを安全に使ううえで最大の武器になります。",
+    step:"まずは「読むだけ」から。Claude Codeに『このフォルダに何があるか教えて』と聞くだけ。書き込みゼロ＝何も壊れません。ここから始めれば大丈夫。"
+  },
+];
+
+const answers = new Array(QUESTIONS.length).fill(null);
+const quizEl = document.getElementById('quiz');
+
+QUESTIONS.forEach((item, qi)=>{
+  const card = document.createElement('div');
+  card.className = 'card';
+  const num = document.createElement('div');
+  num.className = 'q-num';
+  num.textContent = 'Q' + (qi+1) + ' / ' + QUESTIONS.length;
+  const qt = document.createElement('p');
+  qt.className = 'q-text';
+  qt.textContent = item.q;
+  card.appendChild(num); card.appendChild(qt);
+  item.opts.forEach((o, oi)=>{
+    const b = document.createElement('button');
+    b.className = 'opt';
+    b.innerHTML = '<span class="mk">' + String.fromCharCode(65+oi) + '</span>' + o.t;
+    b.onclick = ()=>{
+      answers[qi] = o.v;
+      [...card.querySelectorAll('.opt')].forEach(x=>x.classList.remove('sel'));
+      b.classList.add('sel');
+      updateProgress();
+    };
+    card.appendChild(b);
+  });
+  quizEl.appendChild(card);
+});
+
+function updateProgress(){
+  const done = answers.filter(a=>a!==null).length;
+  const btn = document.getElementById('diagnose');
+  const prog = document.getElementById('progress');
+  if(done === QUESTIONS.length){
+    btn.disabled = false;
+    prog.textContent = '準備OK！「恐怖度を診断する」を押してください';
+  }else{
+    btn.disabled = true;
+    prog.textContent = 'あと ' + (QUESTIONS.length - done) + ' 問で診断できます';
+  }
+}
+
+function pickResult(score){
+  return RESULTS.find(r=>score>=r.min && score<=r.max);
+}
+
+function wrapText(ctx, text, x, y, maxW, lh){
+  const chars = [...text];
+  let line = '';
+  for(let i=0;i<chars.length;i++){
+    const test = line + chars[i];
+    if(ctx.measureText(test).width > maxW && line){
+      ctx.fillText(line, x, y);
+      line = chars[i]; y += lh;
+    }else{ line = test; }
+  }
+  ctx.fillText(line, x, y);
+  return y;
+}
+
+function drawCard(score, res){
+  const c = document.getElementById('card');
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  // background
+  ctx.fillStyle = '#0d1117'; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle = res.color; ctx.lineWidth = 6;
+  ctx.strokeRect(3,3,W-6,H-6);
+  // terminal header bar
+  ctx.fillStyle = '#161b22'; ctx.fillRect(6,6,W-12,54);
+  const dots = ['#ff5f56','#ffbd2e','#27c93f'];
+  dots.forEach((d,i)=>{ ctx.fillStyle=d; ctx.beginPath(); ctx.arc(34+i*26,33,8,0,7); ctx.fill(); });
+  ctx.fillStyle = '#8b949e'; ctx.font = '600 18px "SF Mono",Menlo,monospace';
+  ctx.textAlign = 'right'; ctx.fillText('terminal-fear --check', W-22, 39);
+  ctx.textAlign = 'left';
+  // title
+  ctx.fillStyle = '#e6edf3'; ctx.font = '700 24px sans-serif';
+  ctx.fillText('ターミナル恐怖度診断', 34, 110);
+  // score big
+  ctx.fillStyle = res.color; ctx.font = '800 80px "SF Mono",Menlo,monospace';
+  ctx.fillText(score, 34, 200);
+  ctx.fillStyle = '#8b949e'; ctx.font = '600 26px "SF Mono",monospace';
+  ctx.fillText('/ 15', 34 + ctx.measureText(score).width + 14, 200);
+  // level label
+  ctx.fillStyle = res.color; ctx.font = '700 20px "SF Mono",monospace';
+  ctx.textAlign = 'right'; ctx.fillText(res.lv, W-34, 150);
+  ctx.textAlign = 'left';
+  // meter
+  const mx=34, my=232, mw=W-68, mh=22;
+  ctx.fillStyle = '#21262d'; roundRect(ctx,mx,my,mw,mh,11); ctx.fill();
+  ctx.fillStyle = res.color; roundRect(ctx,mx,my,Math.max(mw*(score/15),24),mh,11); ctx.fill();
+  // type name
+  ctx.fillStyle = '#fff'; ctx.font = '800 38px sans-serif';
+  ctx.fillText(res.name, 34, 312);
+  // phrase
+  ctx.fillStyle = res.color; ctx.font = '700 21px sans-serif';
+  wrapText(ctx, res.phrase, 34, 356, W-68, 30);
+  // divider
+  ctx.strokeStyle = '#30363d'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(34,402); ctx.lineTo(W-34,402); ctx.stroke();
+  // desc
+  ctx.fillStyle = '#c9d1d9'; ctx.font = '400 19px sans-serif';
+  let yy = wrapText(ctx, res.desc, 34, 436, W-68, 30);
+  // step header
+  yy += 34;
+  ctx.fillStyle = res.color; ctx.font = '700 18px sans-serif';
+  ctx.fillText('▶ 今日の最初の一歩', 34, yy);
+  ctx.fillStyle = '#e6edf3'; ctx.font = '400 18px sans-serif';
+  wrapText(ctx, res.step, 34, yy+30, W-68, 27);
+  // footer
+  ctx.fillStyle = '#8b949e'; ctx.font = '600 16px "SF Mono",monospace';
+  ctx.fillText('今日から使えるAI実践帳  @ai_hack_dx', 34, H-28);
+}
+
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+
+document.getElementById('diagnose').onclick = ()=>{
+  const score = answers.reduce((a,b)=>a+b,0);
+  const res = pickResult(score);
+  drawCard(score, res);
+  document.getElementById('stepText').textContent = res.step;
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('result').scrollIntoView({behavior:'smooth'});
+};
+
+document.getElementById('save').onclick = ()=>{
+  const c = document.getElementById('card');
+  const a = document.createElement('a');
+  a.download = 'terminal-fear-check.png';
+  a.href = c.toDataURL('image/png');
+  a.click();
+};
+
+document.getElementById('retry').onclick = ()=>{
+  answers.fill(null);
+  [...document.querySelectorAll('.opt')].forEach(x=>x.classList.remove('sel'));
+  document.getElementById('result').style.display = 'none';
+  updateProgress();
+  window.scrollTo({top:0, behavior:'smooth'});
+};
+</script>
+</body>
+</html>
