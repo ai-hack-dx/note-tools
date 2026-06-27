@@ -272,10 +272,12 @@ function drawCard(score, res){
   ctx.fillStyle = '#e6edf3'; ctx.font = '700 24px sans-serif';
   ctx.fillText('ターミナル恐怖度診断', 34, 110);
   // score big
-  ctx.fillStyle = res.color; ctx.font = '800 80px "SF Mono",Menlo,monospace';
+  ctx.font = '800 80px "SF Mono",Menlo,monospace';
+  const _sw = ctx.measureText(String(score)).width;
+  ctx.fillStyle = res.color;
   ctx.fillText(score, 34, 200);
   ctx.fillStyle = '#8b949e'; ctx.font = '600 26px "SF Mono",monospace';
-  ctx.fillText('/ 15', 34 + ctx.measureText(score).width + 14, 200);
+  ctx.fillText('/ 15', 34 + _sw + 20, 200);
   // level label
   ctx.fillStyle = res.color; ctx.font = '700 20px "SF Mono",monospace';
   ctx.textAlign = 'right'; ctx.fillText(res.lv, W-34, 150);
