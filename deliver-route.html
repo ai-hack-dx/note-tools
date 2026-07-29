@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Claude Codeで作ったツールや資料を、誰にどう渡すか。4問に答えるだけでArtifacts・GitHub Pages・ファイル手渡し・note記事の4つから最適な配り方が決まる無料診断。登録不要・ブラウザだけで完結。">
+<meta property="og:title" content="作ったもの、どう渡す？ 配り方診断">
+<meta property="og:description" content="4問で決まる、Claude Codeで作ったものの配り方。Artifacts / GitHub Pages / ファイル / note記事を比較。">
+<meta property="og:type" content="website">
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+img, svg { max-width: 100%; }
+</style>
+<title>作ったもの、どう渡す？ 配り方診断</title>
+
+<style>
+  :root {
+    --ink: #12202F;
+    --ink-soft: #35485E;
+    --paper: #EDEFF2;
+    --card: #FFFFFF;
+    --line: #C4CDD8;
+    --line-strong: #93A2B4;
+    --muted: #6B7A8C;
+    --stamp: #B03A2E;
+    --stamp-soft: #E8D3CF;
+    --blue: #24557E;
+    --blue-soft: #DCE5EE;
+    --ok: #2E6B4F;
+    --shadow: 0 1px 0 rgba(18, 32, 47, .06), 0 8px 24px -16px rgba(18, 32, 47, .35);
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #E6EBF2;
+      --ink-soft: #B4C1D0;
+      --paper: #101720;
+      --card: #18202B;
+      --line: #2C3846;
+      --line-strong: #46566A;
+      --muted: #8B9AAC;
+      --stamp: #E0705F;
+      --stamp-soft: #3A2320;
+      --blue: #7EA9D4;
+      --blue-soft: #1D2C3C;
+      --ok: #6FBF97;
+      --shadow: 0 1px 0 rgba(0, 0, 0, .3), 0 10px 28px -18px rgba(0, 0, 0, .9);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ink: #E6EBF2;
+    --ink-soft: #B4C1D0;
+    --paper: #101720;
+    --card: #18202B;
+    --line: #2C3846;
+    --line-strong: #46566A;
+    --muted: #8B9AAC;
+    --stamp: #E0705F;
+    --stamp-soft: #3A2320;
+    --blue: #7EA9D4;
+    --blue-soft: #1D2C3C;
+    --ok: #6FBF97;
+    --shadow: 0 1px 0 rgba(0, 0, 0, .3), 0 10px 28px -18px rgba(0, 0, 0, .9);
+  }
+
+  :root[data-theme="light"] {
+    --ink: #12202F;
+    --ink-soft: #35485E;
+    --paper: #EDEFF2;
+    --card: #FFFFFF;
+    --line: #C4CDD8;
+    --line-strong: #93A2B4;
+    --muted: #6B7A8C;
+    --stamp: #B03A2E;
+    --stamp-soft: #E8D3CF;
+    --blue: #24557E;
+    --blue-soft: #DCE5EE;
+    --ok: #2E6B4F;
+    --shadow: 0 1px 0 rgba(18, 32, 47, .06), 0 8px 24px -16px rgba(18, 32, 47, .35);
+  }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .sheet {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 28px 20px 72px;
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+  }
+
+  /* ---- 伝票ヘッダー ---- */
+  .waybill {
+    background: var(--card);
+    border: 1px solid var(--line-strong);
+    box-shadow: var(--shadow);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 18px;
+    padding: 22px 24px;
+    align-items: start;
+  }
+
+  .kicker {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 8px;
+  }
+
+  h1 {
+    font-size: clamp(26px, 5.4vw, 36px);
+    line-height: 1.28;
+    letter-spacing: -.01em;
+    margin: 0 0 10px;
+    text-wrap: balance;
+    font-weight: 700;
+  }
+
+  .lede {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 15px;
+    max-width: 46ch;
+  }
+
+  .stamp {
+    border: 2px solid var(--stamp);
+    color: var(--stamp);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .14em;
+    line-height: 1.5;
+    padding: 9px 11px;
+    text-align: center;
+    transform: rotate(-6deg);
+    white-space: nowrap;
+    align-self: center;
+  }
+
+  .stamp b {
+    display: block;
+    font-size: 15px;
+    letter-spacing: .04em;
+  }
+
+  /* ---- 設問 ---- */
+  .q {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--line-strong);
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .q-head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+
+  .q-no {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--stamp);
+    border: 1px solid var(--stamp);
+    padding: 1px 7px;
+    flex: none;
+  }
+
+  .q-title {
+    font-size: 17px;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .opts {
+    display: grid;
+    gap: 9px;
+  }
+
+  .opt {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: border-color .12s, background .12s;
+  }
+
+  .opt:hover { border-color: var(--line-strong); }
+
+  .opt:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 2px;
+  }
+
+  .opt[aria-pressed="true"] {
+    border-color: var(--blue);
+    background: var(--blue-soft);
+  }
+
+  .tick {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    border: 1px solid var(--line-strong);
+    width: 20px;
+    height: 20px;
+    display: grid;
+    place-items: center;
+    flex: none;
+    margin-top: 2px;
+  }
+
+  .opt[aria-pressed="true"] .tick {
+    background: var(--blue);
+    border-color: var(--blue);
+    color: #fff;
+  }
+
+  :root[data-theme="dark"] .opt[aria-pressed="true"] .tick,
+  .opt[aria-pressed="true"] .tick { color: var(--card); }
+
+  .opt-body strong {
+    display: block;
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .opt-body span {
+    display: block;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* ---- 切り取り線 ---- */
+  .perforation {
+    border: 0;
+    border-top: 2px dashed var(--line-strong);
+    margin: 4px 0;
+    position: relative;
+  }
+
+  .perforation::after {
+    content: "きりとり";
+    position: absolute;
+    top: -11px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--paper);
+    padding: 0 10px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .3em;
+    color: var(--muted);
+  }
+
+  /* ---- 結果 ---- */
+  #result[hidden] { display: none; }
+
+  .label {
+    background: var(--card);
+    border: 2px solid var(--ink);
+    box-shadow: var(--shadow);
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .label-head {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 10px 20px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .2em;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .label-body { padding: 22px 24px 26px; display: flex; flex-direction: column; gap: 16px; }
+
+  .route-name {
+    font-size: clamp(22px, 4.6vw, 29px);
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.35;
+  }
+
+  .route-why {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 15px;
+  }
+
+  .steps {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 10px;
+    border-top: 1px solid var(--line);
+    padding-top: 16px;
+  }
+
+  .steps li {
+    display: grid;
+    grid-template-columns: 26px 1fr;
+    gap: 10px;
+    font-size: 14.5px;
+    align-items: baseline;
+  }
+
+  .steps span {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--stamp);
+  }
+
+  .caution {
+    background: var(--stamp-soft);
+    border-left: 3px solid var(--stamp);
+    padding: 12px 16px;
+    font-size: 14px;
+    color: var(--ink);
+  }
+
+  .caution b { color: var(--stamp); }
+
+  .runner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted);
+    border-top: 1px dashed var(--line);
+    padding-top: 14px;
+  }
+
+  .runner i {
+    font-style: normal;
+    border: 1px solid var(--line);
+    padding: 2px 8px;
+  }
+
+  .runner i.win { border-color: var(--ok); color: var(--ok); }
+
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  button.ghost {
+    font: inherit;
+    font-size: 14px;
+    background: transparent;
+    border: 1px solid var(--line-strong);
+    color: var(--ink);
+    padding: 9px 18px;
+    cursor: pointer;
+  }
+
+  button.ghost:hover { border-color: var(--ink); }
+  button.ghost:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+  /* ---- 比較表 ---- */
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    background: var(--card);
+  }
+
+  table { border-collapse: collapse; width: 100%; min-width: 600px; font-size: 13.5px; }
+
+  th, td { padding: 11px 14px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+
+  thead th {
+    background: var(--blue-soft);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .12em;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+
+  tbody th { font-weight: 700; white-space: nowrap; }
+
+  tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
+
+  h2 {
+    font-size: 19px;
+    margin: 0 0 2px;
+    letter-spacing: -.005em;
+  }
+
+  .note {
+    font-size: 12.5px;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  .section { display: flex; flex-direction: column; gap: 12px; }
+
+  footer {
+    font-size: 12.5px;
+    color: var(--muted);
+    border-top: 1px solid var(--line);
+    padding-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+
+  @media (max-width: 520px) {
+    .waybill { grid-template-columns: 1fr; }
+    .stamp { justify-self: start; }
+  }
+</style>
+
+</head>
+<body>
+<div class="sheet">
+
+  <header class="waybill">
+    <div>
+      <p class="kicker">Delivery Route Finder</p>
+      <h1>作ったもの、どう渡す？</h1>
+      <p class="lede">Claude Codeで作ったツールや資料を、誰にどう届けるか。4問に答えると、4つの配り方から最適な1つが決まります。</p>
+    </div>
+    <div class="stamp">配り方<b>診断</b>4問</div>
+  </header>
+
+  <div class="section" id="quiz"></div>
+
+  <hr class="perforation">
+
+  <section id="result" hidden aria-live="polite">
+    <div class="label">
+      <div class="label-head">
+        <span>DELIVERY SLIP</span>
+        <span id="slip-no">No. ————</span>
+      </div>
+      <div class="label-body">
+        <h2 class="kicker" style="margin:0">おすすめの配り方</h2>
+        <p class="route-name" id="route-name"></p>
+        <p class="route-why" id="route-why"></p>
+        <ul class="steps" id="route-steps"></ul>
+        <p class="caution" id="route-caution"></p>
+        <div class="runner" id="runner"></div>
+        <div class="actions">
+          <button class="ghost" id="again">もう一度やる</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>4つの配り方、早見表</h2>
+    <p class="note">2026年7月時点。Artifactsの公開リンクはPro・Maxプランでも使えます。</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>配り方</th>
+            <th>相手の手間</th>
+            <th>更新の届き方</th>
+            <th>検索</th>
+            <th>準備</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th>Artifacts</th>
+            <td>リンクを開くだけ<br>ログイン不要</td>
+            <td>同じURLが差し替わる</td>
+            <td>されない</td>
+            <td>ほぼゼロ</td>
+          </tr>
+          <tr>
+            <th>GitHub Pages</th>
+            <td>リンクを開くだけ</td>
+            <td>同じURLが差し替わる</td>
+            <td>される</td>
+            <td>初回だけ手順あり</td>
+          </tr>
+          <tr>
+            <th>ファイルを渡す</th>
+            <td>保存して開く</td>
+            <td>届かない<br>送り直しが必要</td>
+            <td>されない</td>
+            <td>ゼロ</td>
+          </tr>
+          <tr>
+            <th>noteに載せる</th>
+            <td>記事を読むだけ</td>
+            <td>記事を更新できる</td>
+            <td>される</td>
+            <td>記事を書く手間</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <div>判定はブラウザの中だけで動きます。入力内容はどこにも送信されません。</div>
+    <div>今日から使えるAI実践帳 / @ai_hack_dx</div>
+  </footer>
+</div>
+
+<script>
+  const QUESTIONS = [
+    {
+      no: "Q1",
+      title: "誰に渡しますか？",
+      opts: [
+        { t: "ネットの不特定多数", d: "SNSやブログで広く配りたい", s: { art: 2, gh: 3, file: -3, note: 3 } },
+        { t: "特定の数人", d: "友人・取引先・お客さんに個別に", s: { art: 3, gh: 1, file: 2, note: -2 } },
+        { t: "社内の同僚", d: "部署やチームで使ってもらう", s: { art: 2, gh: 0, file: 3, note: -3 } },
+        { t: "自分だけ", d: "記録として残しておきたい", s: { art: 3, gh: 1, file: 2, note: -3 } }
+      ]
+    },
+    {
+      no: "Q2",
+      title: "渡すものは何ですか？",
+      opts: [
+        { t: "動くツール・アプリ", d: "ボタンを押すと何かが起きるもの", s: { art: 3, gh: 3, file: 1, note: -1 } },
+        { t: "資料・レポート・図", d: "見てもらうもの", s: { art: 3, gh: 1, file: 1, note: 3 } },
+        { t: "ExcelやPDFのファイル", d: "相手が自分の手元で開くもの", s: { art: -3, gh: -2, file: 3, note: 0 } }
+      ]
+    },
+    {
+      no: "Q3",
+      title: "渡したあと、直しますか？",
+      opts: [
+        { t: "たぶん直す", d: "使ってもらいながら改善したい", s: { art: 3, gh: 3, file: -3, note: 1 } },
+        { t: "一度きり", d: "渡したら終わり", s: { art: 1, gh: 0, file: 2, note: 0 } }
+      ]
+    },
+    {
+      no: "Q4",
+      title: "検索から見つけてほしいですか？",
+      opts: [
+        { t: "見つけてほしい", d: "知らない人にも届いてほしい", s: { art: -2, gh: 3, file: -3, note: 3 } },
+        { t: "その必要はない", d: "リンクを知っている人だけでいい", s: { art: 3, gh: 0, file: 1, note: -1 } }
+      ]
+    }
+  ];
+
+  const ROUTES = {
+    art: {
+      name: "Artifacts（claude.ai）で公開リンクにする",
+      why: "Claude Codeに「これをアーティファクトにして」と頼むだけで、claude.ai上のページになりURLが1本出ます。準備がほぼゼロなのに、相手はログインなしで開けます。",
+      steps: [
+        "作ったHTMLをClaude Codeに開かせて「アーティファクトにして公開して」と頼む",
+        "許可を聞かれたらYesを選ぶ。URLが表示され、ブラウザが開く",
+        "ページ右上のShareから公開リンクに切り替えて、URLを渡す",
+        "直したくなったら、同じセッションで「ここを直して」と頼めば同じURLが差し替わる"
+      ],
+      caution: "<b>注意：</b>1枚のページしか作れず、フォームの内容を保存するような機能は持てません。検索でも出てきません。また、MCPコネクタで外部データを読むページは公開リンクにできない決まりです。"
+    },
+    gh: {
+      name: "GitHub Pagesに置いて自分のURLにする",
+      why: "無料で自分専用のURLが持て、検索にも載ります。ページを何枚も置けるので、ツールが増えても同じ場所に貯めていけます。",
+      steps: [
+        "GitHubで公開リポジトリを1つ作る（無料）",
+        "設定のPagesを開き、公開元のブランチを指定する",
+        "作ったHTMLファイルを置く。数十秒後にURLで見られるようになる",
+        "以後はファイルを差し替えるだけで、同じURLの中身が新しくなる"
+      ],
+      caution: "<b>注意：</b>初回だけアカウント作成と設定の手順があります。ここを越えれば、あとはファイルを置くだけです。公開リポジトリなので、中に個人情報や鍵を書かないでください。"
+    },
+    file: {
+      name: "ファイルをそのまま渡す",
+      why: "相手の手元にモノが残ります。ExcelやPDFのように「開いて使う」ものは、これがいちばん素直です。リンク切れの心配もありません。",
+      steps: [
+        "作ったファイルをメールやチャットに添付する",
+        "HTMLの場合は「ダブルクリックでブラウザが開きます」と一言添える",
+        "相手が開けたか、最初の1人にだけ確認しておく"
+      ],
+      caution: "<b>注意：</b>直したときに古い版が相手の手元に残り続けます。配ったあとに直す予定があるなら、この方法は向きません。"
+    },
+    note: {
+      name: "noteなどの記事に載せて公開する",
+      why: "知らない人に届く経路をいちばん持っています。作ったものの背景まで説明できるので、ただのURLより受け取ってもらいやすくなります。",
+      steps: [
+        "作ったものはArtifactsかGitHub Pagesで先にURLにしておく",
+        "記事に「何のために作ったか」と使い方を書く",
+        "本文にそのURLを貼り、実際の画面のスクリーンショットを添える"
+      ],
+      caution: "<b>注意：</b>記事を書く手間はかかります。ただし、この手間が結果的にいちばん長く効きます。急ぎで数人に渡したいだけなら別の方法にしてください。"
+    }
+  };
+
+  const LABELS = { art: "Artifacts", gh: "GitHub Pages", file: "ファイル", note: "note記事" };
+
+  const answers = new Array(QUESTIONS.length).fill(null);
+  const quiz = document.getElementById("quiz");
+
+  QUESTIONS.forEach((q, qi) => {
+    const sec = document.createElement("div");
+    sec.className = "q";
+    const head = document.createElement("div");
+    head.className = "q-head";
+    head.innerHTML = '<span class="q-no">' + q.no + '</span><h2 class="q-title">' + q.title + "</h2>";
+    sec.appendChild(head);
+
+    const list = document.createElement("div");
+    list.className = "opts";
+    q.opts.forEach((o, oi) => {
+      const b = document.createElement("button");
+      b.className = "opt";
+      b.type = "button";
+      b.setAttribute("aria-pressed", "false");
+      b.innerHTML = '<span class="tick" aria-hidden="true">' + (oi + 1) + '</span><span class="opt-body"><strong>' + o.t + "</strong><span>" + o.d + "</span></span>";
+      b.addEventListener("click", () => {
+        answers[qi] = oi;
+        [...list.children].forEach((c, ci) => c.setAttribute("aria-pressed", ci === oi ? "true" : "false"));
+        render();
+      });
+      list.appendChild(b);
+    });
+    sec.appendChild(list);
+    quiz.appendChild(sec);
+  });
+
+  function render() {
+    if (answers.some(a => a === null)) return;
+
+    const score = { art: 0, gh: 0, file: 0, note: 0 };
+    answers.forEach((oi, qi) => {
+      const s = QUESTIONS[qi].opts[oi].s;
+      for (const k in s) score[k] += s[k];
+    });
+
+    const ranked = Object.keys(score).sort((a, b) => score[b] - score[a]);
+    const win = ranked[0];
+    const r = ROUTES[win];
+
+    document.getElementById("route-name").textContent = r.name;
+    document.getElementById("route-why").textContent = r.why;
+    document.getElementById("route-caution").innerHTML = r.caution;
+
+    const ul = document.getElementById("route-steps");
+    ul.innerHTML = "";
+    r.steps.forEach((s, i) => {
+      const li = document.createElement("li");
+      li.innerHTML = "<span>" + String(i + 1).padStart(2, "0") + "</span><span>" + s + "</span>";
+      ul.appendChild(li);
+    });
+
+    const runner = document.getElementById("runner");
+    runner.innerHTML = "";
+    ranked.forEach(k => {
+      const i = document.createElement("i");
+      if (k === win) i.className = "win";
+      i.textContent = LABELS[k] + " " + (score[k] >= 0 ? "+" : "") + score[k];
+      runner.appendChild(i);
+    });
+
+    const slip = answers.map(a => a + 1).join("");
+    document.getElementById("slip-no").textContent = "No. " + slip + "-" + LABELS[win].slice(0, 2).toUpperCase();
+
+    const res = document.getElementById("result");
+    res.hidden = false;
+    res.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  document.getElementById("again").addEventListener("click", () => {
+    answers.fill(null);
+    document.querySelectorAll(".opt").forEach(b => b.setAttribute("aria-pressed", "false"));
+    document.getElementById("result").hidden = true;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+</script>
+
+</body>
+</html>
