@@ -1,0 +1,457 @@
+<title>Artifact公開前チェッカー</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --paper: #ffffff;
+    --surface: #f3f4f7;
+    --surface-2: #e8eaf0;
+    --ink: #17191c;
+    --ink-soft: #4a5060;
+    --muted: #6a7180;
+    --line: #d8dbe4;
+    --accent: #2b5fd9;
+    --accent-soft: #eaeffc;
+    --flag: #d1453b;
+    --flag-soft: #fdeceb;
+    --warn: #a86a12;
+    --warn-soft: #fbf2e0;
+    --ok: #2e7d4f;
+    --ok-soft: #e7f4ec;
+    --radius: 6px;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #14161a;
+      --surface: #1b1e24;
+      --surface-2: #23272f;
+      --ink: #e9ebef;
+      --ink-soft: #b0b6c2;
+      --muted: #8b93a1;
+      --line: #2f343d;
+      --accent: #7ba3f5;
+      --accent-soft: #1c2537;
+      --flag: #f0847a;
+      --flag-soft: #2e1e1d;
+      --warn: #e0b063;
+      --warn-soft: #2b2418;
+      --ok: #6fc492;
+      --ok-soft: #17281e;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #14161a;
+    --surface: #1b1e24;
+    --surface-2: #23272f;
+    --ink: #e9ebef;
+    --ink-soft: #b0b6c2;
+    --muted: #8b93a1;
+    --line: #2f343d;
+    --accent: #7ba3f5;
+    --accent-soft: #1c2537;
+    --flag: #f0847a;
+    --flag-soft: #2e1e1d;
+    --warn: #e0b063;
+    --warn-soft: #2b2418;
+    --ok: #6fc492;
+    --ok-soft: #17281e;
+  }
+  :root[data-theme="light"] {
+    --paper: #ffffff;
+    --surface: #f3f4f7;
+    --surface-2: #e8eaf0;
+    --ink: #17191c;
+    --ink-soft: #4a5060;
+    --muted: #6a7180;
+    --line: #d8dbe4;
+    --accent: #2b5fd9;
+    --accent-soft: #eaeffc;
+    --flag: #d1453b;
+    --flag-soft: #fdeceb;
+    --warn: #a86a12;
+    --warn-soft: #fbf2e0;
+    --ok: #2e7d4f;
+    --ok-soft: #e7f4ec;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--surface);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 28px 20px 64px; }
+
+  header.masthead {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 14px;
+    padding-bottom: 14px; border-bottom: 2px solid var(--ink);
+  }
+  .masthead h1 {
+    margin: 0; font-size: 1.5rem; font-weight: 800;
+    letter-spacing: -0.02em; text-wrap: balance;
+  }
+  .masthead p { margin: 0; color: var(--muted); font-size: 0.85rem; }
+
+  .summary {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1px; background: var(--line);
+    border: 1px solid var(--line); border-top: none;
+    margin-bottom: 22px;
+  }
+  .stat { background: var(--paper); padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; }
+  .stat .n { font-size: 1.7rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .stat .k { font-size: 0.72rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  .stat.is-flag .n { color: var(--flag); }
+  .stat.is-warn .n { color: var(--warn); }
+  .stat.is-ok .n { color: var(--ok); }
+
+  .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+  @media (max-width: 860px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+
+  .panel { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .panel > h2 {
+    margin: 0; padding: 11px 15px; font-size: 0.78rem; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft);
+    background: var(--surface-2); border-bottom: 1px solid var(--line);
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  }
+  .panel .pad { padding: 15px; }
+
+  textarea {
+    width: 100%; min-height: 340px; resize: vertical;
+    font-family: var(--mono); font-size: 0.79rem; line-height: 1.65;
+    color: var(--ink); background: var(--paper);
+    border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 12px; tab-size: 2;
+  }
+  textarea:focus-visible, button:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 13px; }
+  button {
+    font-family: inherit; font-size: 0.86rem; font-weight: 700;
+    padding: 9px 17px; border-radius: var(--radius); cursor: pointer;
+    border: 1px solid var(--line); background: var(--paper); color: var(--ink);
+    transition: background 0.12s ease, border-color 0.12s ease;
+  }
+  button:hover { background: var(--surface-2); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.primary:hover { filter: brightness(1.08); }
+  @media (prefers-color-scheme: dark) { button.primary { color: #10141c; } }
+  :root[data-theme="dark"] button.primary { color: #10141c; }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .findings { display: flex; flex-direction: column; }
+  .finding {
+    padding: 13px 15px 14px 13px; border-bottom: 1px solid var(--line);
+    border-left: 3px solid transparent; display: flex; flex-direction: column; gap: 6px;
+  }
+  .finding:last-child { border-bottom: none; }
+  .finding.sev-flag { border-left-color: var(--flag); background: var(--flag-soft); }
+  .finding.sev-warn { border-left-color: var(--warn); background: var(--warn-soft); }
+  .finding.sev-ok { border-left-color: var(--ok); background: var(--ok-soft); }
+  .f-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .chip {
+    font-size: 0.66rem; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 3px; white-space: nowrap;
+  }
+  .sev-flag .chip { background: var(--flag); color: #fff; }
+  .sev-warn .chip { background: var(--warn); color: #fff; }
+  .sev-ok .chip { background: var(--ok); color: #fff; }
+  @media (prefers-color-scheme: dark) { .chip { color: #14161a !important; } }
+  :root[data-theme="dark"] .chip { color: #14161a !important; }
+  .f-title { font-weight: 700; font-size: 0.94rem; }
+  .f-line { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .f-body { font-size: 0.86rem; color: var(--ink-soft); margin: 0; }
+  .f-body strong { color: var(--ink); }
+  .f-code {
+    font-family: var(--mono); font-size: 0.73rem; background: var(--surface-2);
+    border: 1px solid var(--line); border-radius: 4px; padding: 7px 9px;
+    overflow-x: auto; white-space: pre; margin: 0;
+  }
+  .empty { padding: 34px 18px; text-align: center; color: var(--muted); font-size: 0.9rem; }
+
+  .toast {
+    margin-top: 13px; padding: 10px 13px; border-radius: var(--radius);
+    font-size: 0.85rem; border: 1px solid var(--line); background: var(--surface-2);
+  }
+  .toast.err { border-color: var(--flag); background: var(--flag-soft); color: var(--ink); }
+  .toast.good { border-color: var(--ok); background: var(--ok-soft); color: var(--ink); }
+  .toast:empty { display: none; }
+
+  footer.note {
+    margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--line);
+    font-size: 0.8rem; color: var(--muted);
+  }
+  footer.note a { color: var(--accent); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <h1>Artifact公開前チェッカー</h1>
+    <p>claude.aiで公開すると壊れる書き方を、貼るだけで洗い出します</p>
+  </header>
+
+  <div class="summary" id="summary">
+    <div class="stat is-flag"><span class="n" id="n-flag">0</span><span class="k">公開すると壊れる</span></div>
+    <div class="stat is-warn"><span class="n" id="n-warn">0</span><span class="k">直したほうがよい</span></div>
+    <div class="stat is-ok"><span class="n" id="n-ok">0</span><span class="k">問題なし</span></div>
+    <div class="stat"><span class="n" id="n-line">0</span><span class="k">検査した行数</span></div>
+  </div>
+
+  <div class="cols">
+    <section class="panel">
+      <h2>貼り付けたHTML</h2>
+      <div class="pad">
+        <textarea id="src" spellcheck="false" aria-label="検査するHTML"></textarea>
+        <div class="actions">
+          <button class="primary" id="run">検査する</button>
+          <button id="fix">直したHTMLを作る</button>
+          <button id="save">直したHTMLをコピー</button>
+        </div>
+        <div class="toast" id="toast" role="status"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2><span>検査結果</span><span class="f-line" id="stamp"></span></h2>
+      <div class="findings" id="out">
+        <div class="empty">左のHTMLを貼って「検査する」を押してください。</div>
+      </div>
+    </section>
+  </div>
+
+  <footer class="note">
+    このページ自体もClaude Codeで作り、Artifactとして公開しています。判定は公開時によくある失敗パターンに基づく簡易チェックで、claude.ai側の仕様変更で結果が変わることがあります。作者：<a href="https://note.com/ai_hack_dx">今日から使えるAI実践帳</a>
+  </footer>
+</div>
+
+<script>
+(function () {
+  var SAMPLE = [
+    '<!DOCTYPE html>',
+    '<html lang="ja">',
+    '<head>',
+    '  <meta charset="utf-8">',
+    '  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">',
+    '  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap" rel="stylesheet">',
+    '  <script src="https://cdn.jsdelivr.net/npm/chart.js"><\/script>',
+    '</head>',
+    '<body>',
+    '  <h1>今月の売上</h1>',
+    '  <img src="https://example.com/logo.png" alt="ロゴ">',
+    '  <script>',
+    '    fetch("https://api.example.com/sales")',
+    '      .then(function (r) { return r.json(); })',
+    '      .then(function (d) { render(d); });',
+    '  <\/script>',
+    '</body>',
+    '</html>'
+  ].join('\n');
+
+  var RULES = [
+    {
+      id: 'doctype',
+      sev: 'warn',
+      re: /<!DOCTYPE[^>]*>|<\/?html[^>]*>|<\/?head[^>]*>|<\/?body[^>]*>/i,
+      title: '骨組みのタグは書かなくてよい',
+      why: '公開のときに<strong>外側の骨組みは自動で付けられます</strong>。自分で書くと二重になり、表示が崩れることがあります。',
+      fix: '中身（titleと本文）だけを残してください。'
+    },
+    {
+      id: 'font',
+      sev: 'flag',
+      re: /<link[^>]+(fonts\.googleapis|fonts\.gstatic|use\.typekit|fonts\.bunny)/i,
+      title: '外部のWebフォントは読み込めない',
+      why: '公開ページは<strong>外部サイトへの通信が全部止められます</strong>。フォントは黙って別の書体に置き換わり、崩れて見えます。',
+      fix: 'font-familyをsystem-uiなど端末内蔵の書体にするか、フォント自体をデータとして埋め込みます。'
+    },
+    {
+      id: 'css',
+      sev: 'flag',
+      re: /<link[^>]+rel=["']?stylesheet["']?[^>]*href=["']?https?:\/\//i,
+      title: '外部CSSは読み込めない',
+      why: '別サイトに置いたCSSは<strong>取得がブロックされ、無視されます</strong>。見た目だけが全部消えた状態で公開されます。',
+      fix: 'CSSはstyleタグに直接書き込んでください。'
+    },
+    {
+      id: 'cdn',
+      sev: 'flag',
+      re: /<script[^>]+src=["']?https?:\/\//i,
+      title: 'CDNのJavaScriptは読み込めない',
+      why: 'CDNから配られるライブラリは<strong>取得がブロックされます</strong>。読み込み前提で書いた処理はその時点で止まります。',
+      fix: 'ライブラリを使わずに書くか、必要な部分だけscriptタグ内に書き写します。'
+    },
+    {
+      id: 'import',
+      sev: 'flag',
+      re: /@import\s+url\(\s*["']?https?:\/\//i,
+      title: 'CSSの@importで外部を読んでいる',
+      why: 'linkタグと同じく<strong>外部からの読み込みは止められます</strong>。',
+      fix: '読み込もうとしている中身を、そのままstyleタグに貼り付けます。'
+    },
+    {
+      id: 'net',
+      sev: 'flag',
+      re: /\bfetch\s*\(|XMLHttpRequest|new\s+WebSocket|navigator\.sendBeacon|EventSource\s*\(/,
+      title: '外部との通信は成功しない',
+      why: '通信は<strong>すべて遮断されます</strong>。エラー処理を書いていないと、画面が空白のまま止まります。',
+      fix: '表示したいデータをHTMLの中に直接書いておくか、利用者が貼り付ける形にします。'
+    },
+    {
+      id: 'img',
+      sev: 'flag',
+      re: /<img[^>]+src=["']?https?:\/\//i,
+      title: '外部の画像は表示されない',
+      why: '別サイトの画像URLは<strong>読み込めず、代替テキストだけが残ります</strong>。',
+      fix: '画像をdata:形式に変換して埋め込むか、CSSと文字で代用します。'
+    },
+    {
+      id: 'iframe',
+      sev: 'flag',
+      re: /<iframe[^>]+src=["']?https?:\/\//i,
+      title: '外部ページの埋め込みは表示されない',
+      why: '動画や地図の埋め込みも<strong>外部通信として止められます</strong>。',
+      fix: 'リンクとして置き、押したら別タブで開く形にします。'
+    },
+    {
+      id: 'storage',
+      sev: 'warn',
+      re: /localStorage|sessionStorage/,
+      title: '保存した内容は残らないことがある',
+      why: '見る人の環境によって<strong>保存が使えない場合があります</strong>。次に開いたとき消えている前提で作ります。',
+      fix: '消えても困らない使い方にするか、保存できないときの動きを決めておきます。'
+    }
+  ];
+
+  var el = function (id) { return document.getElementById(id); };
+  var src = el('src'), out = el('out'), toast = el('toast');
+  src.value = SAMPLE;
+
+  function esc(s) {
+    return String(s).replace(/[&<>]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c];
+    });
+  }
+
+  function analyze(text) {
+    var lines = text.split('\n');
+    var hits = [];
+    RULES.forEach(function (rule) {
+      for (var i = 0; i < lines.length; i++) {
+        if (rule.re.test(lines[i])) {
+          hits.push({ rule: rule, line: i + 1, code: lines[i].trim() });
+          break;
+        }
+      }
+    });
+    return { hits: hits, lines: lines.length };
+  }
+
+  function render(text) {
+    var res = analyze(text);
+    var flag = 0, warn = 0;
+    res.hits.forEach(function (h) { h.rule.sev === 'flag' ? flag++ : warn++; });
+
+    el('n-flag').textContent = flag;
+    el('n-warn').textContent = warn;
+    el('n-ok').textContent = RULES.length - res.hits.length;
+    el('n-line').textContent = res.lines;
+    el('stamp').textContent = res.hits.length + ' 件の指摘';
+
+    if (!res.hits.length) {
+      out.innerHTML = '<div class="finding sev-ok"><div class="f-head">' +
+        '<span class="chip">問題なし</span><span class="f-title">このまま公開できます</span></div>' +
+        '<p class="f-body">よくある失敗パターンは見つかりませんでした。</p></div>';
+      return;
+    }
+
+    out.innerHTML = res.hits.map(function (h) {
+      return '<div class="finding sev-' + h.rule.sev + '">' +
+        '<div class="f-head">' +
+          '<span class="chip">' + (h.rule.sev === 'flag' ? '壊れる' : '要確認') + '</span>' +
+          '<span class="f-title">' + h.rule.title + '</span>' +
+          '<span class="f-line">' + h.line + '行目</span>' +
+        '</div>' +
+        '<pre class="f-code">' + esc(h.code.slice(0, 160)) + '</pre>' +
+        '<p class="f-body">' + h.rule.why + '</p>' +
+        '<p class="f-body"><strong>直し方：</strong>' + h.rule.fix + '</p>' +
+      '</div>';
+    }).join('');
+  }
+
+  function repair(text) {
+    var lines = text.split('\n');
+    var kept = [];
+    lines.forEach(function (ln) {
+      if (/<!DOCTYPE[^>]*>|<\/?html[^>]*>|<\/?head[^>]*>|<\/?body[^>]*>/i.test(ln)) return;
+      if (/<link[^>]+href=["']?https?:\/\//i.test(ln)) { kept.push('<!-- 外部CSSは読み込めないため削除しました -->'); return; }
+      if (/<script[^>]+src=["']?https?:\/\//i.test(ln)) { kept.push('<!-- 外部スクリプトは読み込めないため削除しました -->'); return; }
+      if (/<iframe[^>]+src=["']?https?:\/\//i.test(ln)) { kept.push('<!-- 外部ページの埋め込みは表示されないため削除しました -->'); return; }
+      if (/<img[^>]+src=["']?https?:\/\//i.test(ln)) { kept.push('<!-- 外部画像は表示されません。data:形式に置き換えてください -->'); return; }
+      kept.push(ln);
+    });
+    return kept.join('\n').replace(/\n{3,}/g, '\n\n').trim() + '\n';
+  }
+
+  function say(msg, kind) {
+    toast.className = 'toast' + (kind ? ' ' + kind : '');
+    toast.textContent = msg;
+  }
+
+  el('run').addEventListener('click', function () {
+    render(src.value);
+    say('');
+  });
+
+  el('fix').addEventListener('click', function () {
+    src.value = repair(src.value);
+    render(src.value);
+    say('外部を読み込んでいた行を外しました。中身は自分で置き換えてください。', 'good');
+  });
+
+  var canSave = !!(window.claude && window.claude.downloads);
+  el('save').textContent = canSave ? '直したHTMLを保存' : '直したHTMLをコピー';
+
+  el('save').addEventListener('click', function () {
+    var data = repair(src.value);
+    if (!canSave) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(data)
+          .then(function () { say('コピーしました。エディタに貼り付けて使ってください。', 'good'); })
+          .catch(function () { say('コピーできませんでした。左のHTMLを選んでコピーしてください。', 'err'); });
+      } else {
+        src.select();
+        say('左のHTMLを選択しました。そのままコピーしてください。');
+      }
+      return;
+    }
+    var btn = this;
+    btn.disabled = true;
+    say('保存の確認を待っています。');
+    window.claude.downloads.save({ filename: 'artifact-ready.html', data: data })
+      .then(function () { say('保存しました。', 'good'); })
+      .catch(function (e) {
+        var code = (e && e.code) || 'unavailable';
+        if (code === 'extension_not_enabled' || code === 'rejected_extension') {
+          return window.claude.downloads.save({ filename: 'artifact-ready.txt', data: data })
+            .then(function () { say('HTML形式は許可されていないため、テキストとして保存しました。拡張子を.htmlに変えて使ってください。', 'good'); });
+        }
+        if (code === 'declined') { say('保存を取り消しました。'); return; }
+        if (code === 'rate_limited') { say('少し待ってからもう一度押してください。', 'err'); return; }
+        if (code === 'too_large') { say('16MBを超えているため保存できません。', 'err'); return; }
+        say('保存できませんでした（' + code + '）。左のHTMLをコピーして使ってください。', 'err');
+      })
+      .catch(function () { say('保存できませんでした。左のHTMLをコピーして使ってください。', 'err'); })
+      .then(function () { btn.disabled = false; });
+  });
+
+  render(SAMPLE);
+})();
+</script>
